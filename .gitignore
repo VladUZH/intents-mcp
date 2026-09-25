@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+DerivedData/
+.DS_Store
+*.log
+# generated and signed shortcuts belong to the user, not the repo
+*.shortcut
+!Tests/Fixtures/**/*.shortcut
