@@ -73,7 +73,7 @@ func grouped(_ n: Int) -> String {
 }
 
 func census(_ args: Args) {
-    let index = ActionIndex.scan()
+    let index = Progress.run("Scanning App Intents metadata (about 10 s)…") { ActionIndex.scan() }
     let c = Census(index)
     if args.flags.contains("json") { return printJSON(c) }
     let t = c.byTier
@@ -140,7 +140,7 @@ func logCommand(_ args: Args) throws {
 }
 
 func list(_ args: Args) throws {
-    let index = ActionIndex.scan()
+    let index = Progress.run("Scanning App Intents metadata (about 10 s)…") { ActionIndex.scan() }
     var xs = index.actions
     let tier = args.options["tier"] ?? "all"
     if tier != "all" {

@@ -14,8 +14,7 @@ enum Tools {
     nonisolated(unsafe) static var cachedIndex: ActionIndex?
     static var index: ActionIndex {
         if let i = cachedIndex { return i }
-        FileHandle.standardError.write(Data("scanning App Intents metadata…\n".utf8))
-        let i = ActionIndex.scan()
+        let i = Progress.run("Scanning App Intents metadata (about 10 s)…") { ActionIndex.scan() }
         cachedIndex = i
         return i
     }

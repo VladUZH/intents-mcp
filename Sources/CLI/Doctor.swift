@@ -67,9 +67,10 @@ enum Doctor {
         if json {
             printJSON(cs)
         } else {
+            let width = min(48, cs.map(\.name.count).max() ?? 22)
             for c in cs {
                 let mark = ["ok": "✓", "warn": "!", "fail": "✗", "info": "·"][c.status] ?? "?"
-                print("\(mark) \(c.name.padding(toLength: 22, withPad: " ", startingAt: 0)) \(c.detail)")
+                print("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(c.detail)")
             }
         }
         return cs.contains { $0.status == "fail" } ? 1 : 0

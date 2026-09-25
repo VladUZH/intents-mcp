@@ -314,6 +314,25 @@ M0: **GO**, signed off by the human 2026-09-25.
   it treats macOS 27 as pre-release and pours no bottles. Upstream Homebrew 7.0.6 (2026-09-21)
   has NEWEST_SUPPORTED="27". With current Homebrew, the Tahoe bottle should be poured on 27 (to
   confirm on the human's clean VM = the M4 acceptance). This Mac's Homebrew was not updated.
+- 2026-09-25 — **Install from the real tap on this Mac (VM not ready; human approved):**
+  - The human reran Homebrew's installer → Homebrew updated to **7.0.6** (NEWEST_SUPPORTED="27"),
+    but its post-update step failed: "Reinstalling pkgconf … Your Xcode (26.6) … is too
+    outdated" / "Failed during: brew update --force --quiet". pkgconf was left unlinked.
+  - Fix (approved): `brew reinstall pkgconf` → "Pouring pkgconf--3.0.7.arm64_golden_gate"; link
+    conflict with the old `pkg-config` 0.29.2_3 → `brew unlink pkg-config` + `brew link pkgconf`
+    → `pkg-config --version` 3.0.7.
+  - The first `brew install VladUZH/tap/intents-mcp` still built from source. **My mistake:** the
+    local tap checkout was my stale `brew tap-new` working copy (branch add-intents-mcp, no
+    bottle block). After `git checkout main && git pull` → installed; INSTALL_RECEIPT
+    `poured_from_bottle: true`. So **Homebrew 7 on macOS 27 pours the arm64_tahoe bottle**
+    (older-OS fallback, `find_older_compatible_tag`); no Xcode needed.
+  - `/opt/homebrew/bin/intents-mcp --version` → 0.1.0; `intents-mcp doctor` → all checks ✓;
+    it sees the tools already enabled (same store).
+- 2026-09-25 — UX from the human ("I thought that nothing is happening"): Homebrew's installer is
+  quiet for minutes (not ours; the README now says so). Our scans were also silent for about 10
+  s → `Progress.run` spinner on stderr, TTY only (checked with `script`: spinner frames, then the
+  line clears; `census --json` through a pipe is unchanged). `doctor` no longer truncates tool
+  names. `swift test` → 39 passed. (In main; not released yet.)
 
 ## Decisions
 

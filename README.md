@@ -48,6 +48,10 @@ Folder") never finished and was disabled, so check a new tool before relying on 
 brew install VladUZH/tap/intents-mcp     # prebuilt bottle; no dependencies
 ```
 
+No Homebrew yet? Its [installer](https://brew.sh) asks for your password, then waits for
+RETURN, and can stay quiet for a few minutes while it downloads. That's normal. If you
+already have Homebrew, run `brew update` first.
+
 On macOS 27 this needs a current Homebrew (7.0 or later); older versions build from source
 and ask for Xcode 27. Or from a clone: `swift build -c release` and use
 `.build/release/intents-mcp`.
