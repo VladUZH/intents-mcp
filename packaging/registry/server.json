@@ -8,7 +8,7 @@
     {
       "registryType": "mcpb",
       "identifier": "https://github.com/VladUZH/intents-mcp/releases/download/v0.1.2/intents-mcp-0.1.2.mcpb",
-      "fileSha256": "58ee7b1133fc513f53c217356223ef86c4f66ece32a5d8b8c4723aea0cf19e3e",
+      "fileSha256": "fc679c9f7a08705994e2f2d301fe23b1be7a6ea900ecda0061111d5a2e0269a9",
       "transport": { "type": "stdio" }
     }
   ]
