@@ -3,11 +3,11 @@
   "name": "io.github.VladUZH/intents-mcp",
   "description": "Your Mac's App Intents (Reminders, Calendar, Notes…) as MCP tools via Shortcuts. Public APIs only.",
   "repository": { "url": "https://github.com/VladUZH/intents-mcp", "source": "github" },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/VladUZH/intents-mcp/releases/download/v0.1.0/intents-mcp-0.1.0.mcpb",
+      "identifier": "https://github.com/VladUZH/intents-mcp/releases/download/v0.1.1/intents-mcp-0.1.1.mcpb",
       "fileSha256": "657cc33dd6b54b2797f1ffe03f2d2b19d970e4c2a7a7eccc92e51e6380438662",
       "transport": { "type": "stdio" }
     }
