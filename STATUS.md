@@ -45,7 +45,7 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
     (-32603 "The data couldn't be read because it isn't in the correct format.") =
     swift-sdk#287 reproduced. **hand passes** initialize (2025-06-18) + tools/list.
     tools/call not reached: Codex account usage limit ("try again at 3:41 PM").
-  - Blocked: Codex tools/call against `hand` — re-run after the usage limit resets.
+  - (Codex tools/call against `hand`: done later, see below.)
 - 2026-09-25 — **GATE passed:** user OK'd signing/importing/running test shortcuts and is
   present. Live results so far (`Spike/run.py`, stdin=/dev/null):
   - **Signing (§9 q1):** `shortcuts sign --mode people-who-know-me` → exit 0, `AEA1`, ~0.3 s
@@ -105,6 +105,10 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
     `contents`), but the note's modified time became 15:45 (the run), and a trailing
     space or newline may have been added. The filter (Operator 4 on "Name") was evidently
     ignored, leaving "all notes, limit 1". Entity tests stopped. `notes-append-id` NOT run.
+- 2026-09-25 — **Handshake go criterion: PASS.** Codex 0.157.0 (`npx -y
+  @openai/codex@latest exec …`) → hand server: initialize (with `experimental`
+  object) → tools/list → tools/call `echo` → model replied `echo: ping-hand`. Together with
+  Claude Code 2.1.282 above, the hand-written server works with both clients.
 
 ## Decisions
 
