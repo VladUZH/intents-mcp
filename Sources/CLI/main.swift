@@ -1,5 +1,8 @@
+import Core
 import Foundation
 import IntentsIndex
+import ShortcutForge
+import Store
 
 let version = "0.1.0-dev"
 
@@ -9,8 +12,15 @@ let usage = """
     usage:
       intents-mcp census [--json]                  count the actions this Mac declares
       intents-mcp list [--app <name>] [--tier simple|entity|unsupported|all] [--json]
+      intents-mcp enable <tool>... [--allow-risky] [--no-wait] [--dry-run]
+                                                   make actions available to agents
+      intents-mcp disable <tool>...                stop exposing them
+      intents-mcp call <tool> '<json args>' [--timeout <s>] [--no-verify]
+                                                   run an enabled tool, as an agent would
+      intents-mcp tools [--json]                   the enabled tools
+      intents-mcp log [--last <n>] [--json]        what was called (no personal content)
       intents-mcp doctor [--json]                  check this Mac is ready
-      intents-mcp enable | disable | serve | log   (not built yet)
+      intents-mcp serve                            (not built yet: M3)
       intents-mcp --version
 
     """
@@ -26,7 +36,7 @@ struct Args {
         while let a = it.next() {
             if a.hasPrefix("--") {
                 let name = String(a.dropFirst(2))
-                if ["app", "tier"].contains(name) {
+                if ["app", "tier", "timeout", "last"].contains(name) {
                     guard let v = it.next() else { throw CLIError.usage("--\(name) needs a value") }
                     options[name] = v
                 } else {
@@ -92,6 +102,40 @@ func census(_ args: Args) {
     for e in index.errors { FileHandle.standardError.write(Data("warning: \(e)\n".utf8)) }
 }
 
+func callCommand(_ args: Args) async throws -> Int32 {
+    guard let alias = args.positional.first else { throw CLIError.usage("call needs a tool name") }
+    var callArgs: [String: JSONValue] = [:]
+    if args.positional.count > 1 {
+        guard case .object(let o)? = try? JSONDecoder().decode(JSONValue.self, from: Data(args.positional[1].utf8)) else {
+            throw CLIError.usage("arguments must be a JSON object, e.g. '{\"title\": \"Call the dentist\"}'")
+        }
+        callArgs = o
+    }
+    let timeout = Int(args.options["timeout"] ?? "30") ?? 30
+    let report = await Tools.call(alias, args: callArgs, caller: "cli", timeout: timeout, verify: !args.flags.contains("no-verify"))
+    printJSON(report)
+    return report.ok ? 0 : 1
+}
+
+func toolsCommand(_ args: Args) throws {
+    let tools = try Tools.store.tools()
+    if args.flags.contains("json") { return printJSON(tools) }
+    if tools.isEmpty { print("No tools enabled. Try `intents-mcp enable reminders.add`."); return }
+    for t in tools {
+        print("\(t.alias)  \(t.shortcutUUID == nil ? "pending (click Add Shortcut)" : "ready")  \(t.source)\(t.allowRisky ? "  risky allowed" : "")")
+    }
+}
+
+func logCommand(_ args: Args) throws {
+    let entries = try Tools.store.log(last: Int(args.options["last"] ?? "50") ?? 50)
+    if args.flags.contains("json") { return printJSON(entries) }
+    let f = ISO8601DateFormatter()
+    for e in entries {
+        let v = e.verified.map { $0 ? "verified" : "NOT verified" } ?? "unverified"
+        print("\(f.string(from: e.time))  \(e.tool.padding(toLength: 24, withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
+    }
+}
+
 func list(_ args: Args) throws {
     let index = ActionIndex.scan()
     var xs = index.actions
@@ -129,7 +173,12 @@ do {
     case "debug-files":  // development aid: the metadata files the scan finds
         for f in ActionIndex.findMetadataFiles() { print(f.path) }
     case "doctor": exit(Doctor.run(json: args.flags.contains("json")))
-    case "enable", "disable", "log": FileHandle.standardError.write(Data("not built yet (M2)\n".utf8)); exit(2)
+    case "enable": try Tools.enable(args.positional, allowRisky: args.flags.contains("allow-risky"), wait: !args.flags.contains("no-wait"),
+                                  dryRun: args.flags.contains("dry-run"))
+    case "disable": try Tools.disable(args.positional)
+    case "call": exit(try await callCommand(args))
+    case "tools": try toolsCommand(args)
+    case "log": try logCommand(args)
     case "serve": FileHandle.standardError.write(Data("not built yet (M3)\n".utf8)); exit(2)
     case nil, "help": print(usage, terminator: "")
     case let c?: throw CLIError.usage("unknown command: \(c)")
@@ -137,4 +186,7 @@ do {
 } catch CLIError.usage(let m) {
     FileHandle.standardError.write(Data("error: \(m)\n\n\(usage)".utf8))
     exit(64)
+} catch {
+    FileHandle.standardError.write(Data("error: \(error)\n".utf8))
+    exit(1)
 }

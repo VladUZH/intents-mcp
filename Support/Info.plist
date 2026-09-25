@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.intents-mcp</string>
+	<key>CFBundleName</key>
+	<string>intents-mcp</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>intents-mcp reads a reminder back after an agent creates it, to check the result. The check runs on your Mac.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>intents-mcp reads an event back after an agent creates it, to check the result. The check runs on your Mac.</string>
+</dict>
+</plist>

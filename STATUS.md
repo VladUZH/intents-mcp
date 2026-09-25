@@ -5,7 +5,8 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below). Next: M2 (enable/run).
+M2 — enable and run (in progress: code offline; live acceptance needs the human).
+M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below).
 M0: **GO**, signed off by the human 2026-09-25.
 
 ## Log
@@ -163,6 +164,29 @@ M0: **GO**, signed off by the human 2026-09-25.
     intent) (research: by fullyQualifiedTypeName, 1,225); discoverable 949 (research 942,
     over its own unique set). The simple tier (48) follows the spec: discoverable, background,
     primitive/enum params only, returns output, not a test/debug intent.
+- 2026-09-25 — M2 started (human: "go ahead", ping only when clicks are due).
+- 2026-09-25 — **GATE slip (mine):** a CLI smoke test ran `intents-mcp enable
+  system-settings.get-lock-message --no-wait` for real, with INTENTS_MCP_HOME pointing at the
+  scratchpad. It signed that wrapper (iCloud; Apple receives a copy) and opened the "Add
+  Shortcut" sheet without asking. The action is read-only (it returns the lock-screen
+  message). I asked the human to close the sheet without adding it. Fix: `enable --dry-run`
+  (build only; no signing, nothing opened), and M2 testing uses unit tests and dry runs only
+  until the gated acceptance.
+- 2026-09-25 — **M2 code (offline part) done:** `Core` (JSONValue from Limatum, Shell with
+  stdin=/dev/null + timeout), `ShortcutForge` (Recipe, Catalog of live-checked recipes:
+  reminders.add / calendar.create-event via built-ins, notes.create via legacy key;
+  `generated(from:)` for simple-tier App Intents, marked unverified; WrapperBuilder = the M0
+  design in Swift; Signer checks `AEA1`), `Store` (tools.json, wrappers/, log.jsonl 0600,
+  no arguments or output), `Runner` (strict argument validation, since Shortcuts drops
+  unknown keys; `shortcuts run <UUID>`; errors mapped to not-added / timeout / failed;
+  library parsing incl. "name 2" copies; EventKit read-back for reminders and events), CLI
+  `enable` (sign → open → poll for the new UUID; `--allow-risky`, `--no-wait`, `--dry-run`),
+  `disable`, `call`, `tools`, `log`; `doctor` shows each tool's state. The binary embeds
+  `Support/Info.plist` (EventKit usage strings) via `-sectcreate __TEXT __info_plist`.
+  - `swift test` → `✔ Test run with 27 tests in 6 suites passed`.
+  - `intents-mcp enable reminders.add calendar.create-event notes.create
+    writing-tools-app-intents.summarize-text notes.create-folder --dry-run` (scratch
+    INTENTS_MCP_HOME) → 5 unsigned wrappers, `plutil -lint` OK ×5, nothing enabled/opened.
 
 ## Decisions
 
@@ -214,6 +238,8 @@ M0: **GO**, signed off by the human 2026-09-25.
   metadata paths (≈9–10 s, versus 47 s for the first FileManager version).
 
 ## Human steps waiting (GATE)
+- 2026-09-25 — **M2 live acceptance:** enable 5 tools for real (5× "Add Shortcut"), first call
+  of each (5× "Always Allow"), EventKit read access for Reminders + Calendar (2 prompts).
 - 2026-09-25 — **M0 go/pivot sign-off** (work plan: go/pivot gate before M1).
 - 2026-09-25 — Please delete the stale spike shortcuts in Shortcuts.app (the CLI has no
   delete), **especially `imcp-spike-notes-append-find` and `imcp-spike-notes-append-id`**

@@ -1,48 +1,7 @@
 import Foundation
+import Core
 import IntentsIndex
-
-/// Runs a tool with stdin from /dev/null (an inherited stdin hangs `shortcuts`) and a timeout.
-enum Shell {
-    struct Result {
-        var status: Int32
-        var stdout: String
-        var stderr: String
-        var timedOut: Bool
-    }
-
-    static func run(_ path: String, _ args: [String], timeout: TimeInterval = 20) -> Result? {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: path)
-        p.arguments = args
-        p.standardInput = FileHandle.nullDevice
-        let out = Pipe(), err = Pipe()
-        p.standardOutput = out
-        p.standardError = err
-        do { try p.run() } catch { return nil }
-        let deadline = Date().addingTimeInterval(timeout)
-        // Read while waiting so a full pipe can't block the child.
-        let outData = LockedData(), errData = LockedData()
-        let g = DispatchGroup()
-        for (h, box) in [(out.fileHandleForReading, outData), (err.fileHandleForReading, errData)] {
-            g.enter()
-            DispatchQueue.global().async { box.set(h.readDataToEndOfFile()); g.leave() }
-        }
-        while p.isRunning && Date() < deadline { usleep(20_000) }
-        let timedOut = p.isRunning
-        if timedOut { p.terminate() }
-        p.waitUntilExit()
-        g.wait()
-        return Result(status: p.terminationStatus, stdout: String(decoding: outData.get(), as: UTF8.self),
-                      stderr: String(decoding: errData.get(), as: UTF8.self), timedOut: timedOut)
-    }
-
-    final class LockedData: @unchecked Sendable {
-        private var data = Data()
-        private let lock = NSLock()
-        func set(_ d: Data) { lock.lock(); data = d; lock.unlock() }
-        func get() -> Data { lock.lock(); defer { lock.unlock() }; return data }
-    }
-}
+import Runner
 
 enum Doctor {
     struct Check: Encodable {
@@ -87,7 +46,19 @@ enum Doctor {
             .appendingPathComponent("intents-mcp")
         out.append(Check(name: "local store", status: "info",
                          detail: FileManager.default.fileExists(atPath: store.path) ? store.path : "\(store.path) (created on first enable)"))
-        out.append(Check(name: "tools enabled", status: "info", detail: "none yet (enable arrives in M2)"))
+        let tools = (try? Tools.store.tools()) ?? []
+        if tools.isEmpty {
+            out.append(Check(name: "tools enabled", status: "info", detail: "none yet (`intents-mcp enable reminders.add`)"))
+        } else {
+            let library = Library.entries() ?? []
+            for t in tools {
+                let present = t.shortcutUUID.map { u in library.contains { $0.uuid == u } } ?? false
+                out.append(Check(name: "tool \(t.alias)", status: present ? "ok" : "warn",
+                                 detail: present ? "\(t.shortcutName) in Shortcuts"
+                                     : t.shortcutUUID == nil ? "pending: click Add Shortcut (or `intents-mcp enable \(t.alias)`)"
+                                     : "its shortcut is missing from Shortcuts: run `intents-mcp enable \(t.alias)`"))
+            }
+        }
         return out
     }
 
