@@ -367,6 +367,9 @@ M0: **GO**, signed off by the human 2026-09-25.
   which: the tool or its helper); the call took 3.2 s. Earlier: Notes/CotEditor/MacWhisper always
   prompted ("save/share 1 dictionary / media item"); Reminders/Calendar mostly not. README, the
   formula caveats, 04-launch and the `enable` message now say Shortcuts "may" ask, not "will".
+- 2026-09-26 — Registry: the first device code expired; restarted `mcp-publisher login github`, the human
+  entered the new code → "Successfully published io.github.VladUZH/intents-mcp version 0.1.1";
+  registry search → 0.1.0 active (latest=false), **0.1.1 active (latest=true)**.
 
 ## Decisions
 
