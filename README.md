@@ -45,7 +45,7 @@ Folder") never finished and was disabled, so check a new tool before relying on 
 ## Install
 
 ```sh
-brew install VladUZH/tap/intents-mcp     # builds from source; no dependencies
+brew install VladUZH/tap/intents-mcp     # prebuilt bottle; no dependencies
 ```
 
 Or from a clone: `swift build -c release` and use `.build/release/intents-mcp`.

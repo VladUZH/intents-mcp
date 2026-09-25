@@ -272,6 +272,22 @@ M0: **GO**, signed off by the human 2026-09-25.
   - `packaging/registry/server.json` (draft, description 98 chars ≤ 100; release URL/sha
     placeholders).
   - `swift test` → 39 tests in 10 suites passed.
+- 2026-09-25 — Human: license MIT ✓, owner VladUZH / `VladUZH/tap` ✓, public at T-14 ✓, **no
+  Developer ID purchase for now** (only the MCPB/Claude Desktop path needs it; Homebrew and
+  shortcut signing don't). Approved the local tap install and a no-due reminder run.
+- 2026-09-25 — **Local tap install: blocked by Homebrew's toolchain check.** A local tap
+  (`brew tap-new --no-git vladuzh/tap`; formula url = `file://` tarball of HEAD via `git
+  archive`, sha256 904e2320…55f9) → `brew install --build-from-source vladuzh/tap/intents-mcp`
+  → "Error: Your Xcode (26.6) at /Applications/Xcode.app is too outdated. Please update to
+  Xcode 27.0" + "Your Command Line Tools are too outdated." The same with
+  HOMEBREW_DEVELOPER=1. Xcode not touched; tap removed (`brew untap vladuzh/tap` → "Untapped 1
+  formula"). → The tap must ship **bottles** (brew tap-new's GitHub Actions workflow).
+- 2026-09-25 — **No-due reminder:** `intents-mcp call reminders.add '{"title":"intents-mcp test
+  no due"}'` → first failed: "New Reminder failed because Shortcuts couldn’t convert from Text
+  to Date." (an empty time is converted before "No Alert" is read). Fix in `prepare` (no
+  re-import): with no due, pass the placeholder "today" plus WFAlertEnabled "No Alert". Rerun →
+  ok, 1069 ms, **verified: "read back through Shortcuts: no due date"**, so the placeholder is
+  not applied. `swift test` → 39 passed.
 
 ## Decisions
 
@@ -329,16 +345,16 @@ M0: **GO**, signed off by the human 2026-09-25.
 - 2026-09-25 — Generated (metadata) tools stay allowed but are labelled unverified. M2 data:
   2 of 3 worked (Writing Tools yes; Notes Create Folder hangs). The timeout plus a clear error
   is the safety net; a tool that fails its first live run should be disabled and noted.
-- 2026-09-25 — Drafted **MIT** license and the owner/tap name **VladUZH / VladUZH/tap**
-  (from the git user); both are the human's call before the repo goes public.
+- 2026-09-25 — License **MIT** and owner/tap **VladUZH / VladUZH/tap** (confirmed by the human).
 - 2026-09-25 — awesome-mcp-servers (needs a Linux build for Glama) and the Docker catalog are
   skipped: the code uses macOS-only frameworks (Security, EventKit).
 
 ## Human steps waiting (GATE)
-- 2026-09-25 — **M4 GATEs:** confirm license + GitHub owner; make the repo public (05 §8:
+- 2026-09-25 — **M4 GATEs:** make the repo public (05 §8:
   T-14); create the `homebrew-tap` repo and fill the formula's url/sha256 from the v0.1.0 tag;
-  clean-Mac/fresh-user install test (the M4 acceptance); decide on Developer ID +
-  notarization (needed for the MCPB/Claude Desktop, not for Homebrew); MCP Registry
+  clean-Mac/fresh-user install test (the M4 acceptance); Developer ID + notarization deferred by
+  the human (MCPB/Claude Desktop only); set up bottling in the tap (Homebrew won't build from
+  source on macOS 27 with Xcode 26.6); MCP Registry
   (`mcp-publisher login github`); demo video; posts.
 - 2026-09-25 — ~~M3 live acceptance~~ done (see Log). Two more test reminders "Call the
   dentist" (tomorrow 10:00) to delete.

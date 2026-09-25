@@ -22,12 +22,16 @@ public enum Catalog {
             RecipeInput("alert", "WFAlertEnabled", .enumeration(["Alert", "No Alert"]), exposed: false),
         ],
         fixed: ["WFAlertCondition": .string("At Time")],
-        verified: "M0 2026-09-25, macOS 27.0: title, notes, due as text (alert from input: checked in M2)",
+        verified: "2026-09-25, macOS 27.0: title, notes, due as text; no due → No Alert, read back as no due date",
         readBack: .reminder, version: 1,
         prepare: { args in
             var a = args
             let due = args["due"]?.stringValue ?? ""
             a["alert"] = .string(due.isEmpty ? "No Alert" : "Alert")
+            // Shortcuts converts the time text to a date before it looks at "No Alert", so an empty
+            // value fails ("couldn't convert from Text to Date", M4 live run). With no alert the
+            // time is a placeholder that the reminder does not get (checked by read-back).
+            if due.isEmpty { a["due"] = "today" }
             return a
         })
 

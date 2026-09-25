@@ -105,7 +105,10 @@ is reached. Reassess at once if Apple announces native MCP for App Intents.
 - Claude Desktop: not tested (60 s request timeout; `serve` defaults to 50 s).
 - A clean Mac or fresh user account: install from the tap and pass the M3 check (the M4
   acceptance).
-- A reminder with no due time (the `No Alert` path) has not been run live.
+- **Homebrew on macOS 27 refuses to build from source with Xcode 26.6** ("Your Xcode (26.6) …
+  is too outdated. Please update to Xcode 27.0"). Users with older Xcode/CLT need a **bottle**:
+  set up the tap with `brew tap-new` (GitHub Actions bottling) and ship bottles for macOS 27.
+  The local tap test on the author's Mac stopped there (Xcode not updated).
 - Decide the license (drafted as MIT) and the GitHub owner/tap name (drafted as
   `VladUZH/tap`).
 

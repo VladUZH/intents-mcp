@@ -114,7 +114,9 @@ func params(_ a: [String: Any]) -> [String: Any] { a["WFWorkflowActionParameters
     @Test func wrapperInputDerivesAndFilters() {
         let withDue = Runner.wrapperInput(["title": "Dentist", "due": "tomorrow at 10:00"], for: Catalog.remindersAdd)
         #expect(withDue == ["title": "Dentist", "due": "tomorrow at 10:00", "alert": "Alert"])
-        #expect(Runner.wrapperInput(["title": "Dentist"], for: Catalog.remindersAdd)["alert"] == "No Alert")
+        let noDue = Runner.wrapperInput(["title": "Dentist"], for: Catalog.remindersAdd)
+        #expect(noDue["alert"] == "No Alert")
+        #expect(noDue["due"] == "today")  // placeholder: an empty time can't be converted to a date
         #expect(Runner.wrapperInput(["title": "Shopping", "body": "milk"], for: Catalog.notesCreate)
                 == ["contents": "Shopping\nmilk"])
     }
