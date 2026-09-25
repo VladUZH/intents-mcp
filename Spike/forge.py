@@ -112,6 +112,31 @@ def reminders_probe(flag, due):
     return finish(w, "intent")
 
 
+def reminders_builtin():
+    """Mac ground truth (user-exported reference, 2026-09-25): Shortcuts uses the built-in
+    is.workflow.actions.addnewreminder, not the App Intent. Keys from shortcutkit's catalog."""
+    w = Wrapper("reminders-builtin")
+    v = json_input(w, ["title", "notes", "due"])
+    w.add("is.workflow.actions.addnewreminder", "intent",
+          WFCalendarItemTitle=token_string(as_text(w, v, "title")),
+          WFCalendarItemNotes=token_string(as_text(w, v, "notes")),
+          WFAlertEnabled="Alert", WFAlertCondition="At Time",
+          WFAlertCustomTime=token_string(as_text(w, v, "due")))
+    return finish(w, "intent", "New Reminder")
+
+
+def calendar_builtin():
+    """Built-in is.workflow.actions.addnewevent; ShowWhenRun off (default shows a compose sheet)."""
+    w = Wrapper("calendar-builtin")
+    v = json_input(w, ["title", "start", "end"])
+    w.add("is.workflow.actions.addnewevent", "intent",
+          WFCalendarItemTitle=token_string(as_text(w, v, "title")),
+          WFCalendarItemStartDate=token_string(as_text(w, v, "start")),
+          WFCalendarItemEndDate=token_string(as_text(w, v, "end")),
+          ShowWhenRun=False)
+    return finish(w, "intent", "New Event")
+
+
 def notes_create():
     w = Wrapper("notes-create")
     v = json_input(w, ["name", "contents"])
@@ -223,7 +248,8 @@ def macwhisper_transcribe():
     return finish(w, "intent")
 
 
-BUILDERS = {"reminders-flag-nodue": lambda: reminders_probe(True, False),
+BUILDERS = {"reminders-builtin": reminders_builtin, "calendar-builtin": calendar_builtin,
+            "reminders-flag-nodue": lambda: reminders_probe(True, False),
             "reminders-noflag-nodue": lambda: reminders_probe(False, False),
             "reminders-flag-due": lambda: reminders_probe(True, True), "echo": echo, "reminders-add-A": lambda: reminders_add("A"), "reminders-add-B": lambda: reminders_add("B"),
             "notes-create": notes_create, "notes-create-text": notes_create_text,

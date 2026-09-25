@@ -5,7 +5,8 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests running.
+M0 — feasibility spike: **GO (proposed, 2026-09-25)**, waiting for the human go/pivot sign-off.
+Next: M1 (index, census, list), with the changes listed under Decisions.
 
 ## Log
 
@@ -109,6 +110,33 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
   @openai/codex@latest exec …`) → hand server: initialize (with `experimental`
   object) → tools/list → tools/call `echo` → model replied `echo: ping-hand`. Together with
   Claude Code 2.1.282 above, the hand-written server works with both clients.
+- 2026-09-25 — **Reminders/Calendar ground truth.** The user built "Add New Reminder" + "Add
+  New Event" in Shortcuts.app and exported the file (`~/Downloads/imcp-ref.shortcut`,
+  iCloud-notarized). `Spike/unwrap.sh` (aea decrypt with the key from the auth data or
+  the leaf cert + `aa extract`; built-in tools only) shows the Mac uses **built-in
+  actions** `is.workflow.actions.addnewreminder` / `addnewevent` (keys
+  `WFCalendarItemTitle`, `WFCalendarItemNotes`), not the App Intents. Other keys from
+  shortcutkit `data/builtin-actions.json`.
+- 2026-09-25 — **Simple action 2 (go criterion): PASS.** `imcp-spike-reminders-builtin`
+  (title, notes, alert `WFAlertCustomTime` from text "tomorrow at 10:00"): cold 5.78 s,
+  warm 0.31 s, exit 0, output `imcp-spike reminder`. `imcp-spike-calendar-builtin`
+  (title, start, end as text, ShowWhenRun off): 1.47 s / warm 0.32 s, output
+  `imcp-spike event`. The user confirmed in Reminders/Calendar: titles, notes and times
+  are exact (10:00, 10:30; 12:00–12:30, 13:00–13:15). No blocking prompt on these runs.
+- 2026-09-25 — **Wrong key (§9 q8):** `{"titel": …}` on the Reminders wrapper → exit 1,
+  stderr `Error: No title was provided. Please provide a title for this reminder.`
+  (a required field fails loudly; an optional wrong key is dropped silently: Notes `contents`).
+- 2026-09-25 — **M0 summary against the accept criteria:**
+  - 2 simple actions end to end with parameters and output: Notes Create Note (legacy
+    form), Reminders Add, and also Calendar Add: **pass**.
+  - Third-party action with parameters and output: CotEditor (param), MacWhisper
+    (file → text): **pass**.
+  - Handshake with Claude Code and Codex: hand-written server, **pass**.
+  - Entities: **"not yet"**; v1 ships the simple tier only.
+  - Lowest macOS version: only macOS 27.0 (26A428) was tested; nothing older is available here.
+  - Not tested: signing offline or signed out (§9 q1), cert expiry (§9 q10), the
+    `openAppWhenRun` behaviour beyond CotEditor opening its window (§9 q9), and runs spawned
+    by an MCP server under each client (§9 q5; do this in M3).
 
 ## Decisions
 
@@ -132,8 +160,21 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
 - 2026-09-25 — Param keys can't be trusted from metadata alone (Notes Create Note:
   `contents` ignored, legacy `WFCreateNoteInput` works; exit 0 either way). So `enable`
   needs a per-action verified key map, or a read-back check that fails loudly.
+- 2026-09-25 — **The M1 census must not equate "in metadata" with "usable".** Import-time
+  checks reject some App Intents on the Mac (Reminders `TTRCreateReminderAppIntent`),
+  while the Mac's own Reminders/Calendar actions are built-ins that the metadata scan
+  doesn't see. Plan for M1: census counts from metadata, labelled as such
+  ("declared"); a curated, verified "simple tier" that mixes App Intents that work
+  (Notes, CotEditor, MacWhisper) with built-ins (Reminders, Calendar), each with a known
+  key map verified live. The launch number must say which of the two it is (rule 5: no
+  invented numbers). The "942 usable in Shortcuts" figure in the docs is unverified.
+- 2026-09-25 — Wrapper recipe (M2): detect.dictionary → getvalueforkey → gettext per
+  key → action (strings/dates as token strings) → gettext → output;
+  `WFWorkflowHasOutputAction: true`; binary plist; `people-who-know-me` signing; run by
+  UUID with stdin=/dev/null; resolve the UUID again after every import.
 
 ## Human steps waiting (GATE)
+- 2026-09-25 — **M0 go/pivot sign-off** (work plan: go/pivot gate before M1).
 - 2026-09-25 — Please delete the stale spike shortcuts in Shortcuts.app (the CLI has no
   delete), **especially `imcp-spike-notes-append-find` and `imcp-spike-notes-append-id`**
   (unsafe: they can act on an arbitrary note). Test data to remove when convenient:
