@@ -69,44 +69,54 @@ enum Tools {
         for key in keys {
             let (r, spec) = try recipeForEnable(key)
             if r.risky && !allowRisky { throw ToolError.risky(r.alias, r.riskReasons) }
-
-            let unsigned = try store.wrapperURL(alias: r.alias, version: r.version, signed: false)
-            let signed = try store.wrapperURL(alias: r.alias, version: r.version, signed: true)
-            try WrapperBuilder.data(r).write(to: unsigned)
-            if let spec { try JSONEncoder().encode(spec).write(to: specURL(r.alias, r.version)) }
-            if dryRun {
-                print("\(r.alias): dry run: unsigned wrapper at \(unsigned.path); not signed, not opened, not enabled")
-                continue
+            if let spec { try? FileManager.default.createDirectory(at: specURL(r.alias, r.version).deletingLastPathComponent(), withIntermediateDirectories: true)
+                          try JSONEncoder().encode(spec).write(to: specURL(r.alias, r.version)) }
+            try install(alias: r.alias, version: r.version, shortcutName: r.shortcutName, data: WrapperBuilder.data(r),
+                        source: spec == nil ? "catalog" : "generated", actionID: spec?.id, allowRisky: allowRisky,
+                        wait: wait, dryRun: dryRun, note: r.verified == nil ? "generated from metadata and not checked on a real run yet" : nil)
+            // Results are read back through a helper shortcut (one per app, shared by its tools).
+            if let kind = r.readBack {
+                try install(alias: ReadBackWrappers.alias(kind), version: ReadBackWrappers.version(kind),
+                            shortcutName: ReadBackWrappers.shortcutName(kind), data: ReadBackWrappers.data(kind),
+                            source: "helper", actionID: nil, allowRisky: false, wait: wait, dryRun: dryRun,
+                            note: "read-back helper: reads the newest \(kind == .reminder ? "reminder" : "event") to confirm results; never exposed to agents")
             }
-            print("\(r.alias): signing the wrapper shortcut (uses your iCloud account; Apple receives a copy for validation)…")
-            try Signer.sign(unsigned: unsigned, to: signed)
+        }
+    }
 
-            let before = Library.entries().map { Library.matching(r.shortcutName, in: $0) } ?? []
-            if let existing = try store.tools().first(where: { $0.alias == r.alias }), existing.version == r.version,
-               let uuid = existing.shortcutUUID, before.contains(where: { $0.uuid == uuid }) {
-                print("\(r.alias): already enabled (\(r.shortcutName))")
-                continue
-            }
-            var tool = EnabledTool(alias: r.alias, source: spec == nil ? "catalog" : "generated", actionID: spec?.id,
-                                   version: r.version, shortcutName: r.shortcutName, shortcutUUID: nil,
-                                   enabledAt: Date(), allowRisky: allowRisky)
+    static func install(alias: String, version: Int, shortcutName: String, data: Data, source: String, actionID: String?,
+                        allowRisky: Bool, wait: Bool, dryRun: Bool, note: String?) throws {
+        let unsigned = try store.wrapperURL(alias: alias, version: version, signed: false)
+        let signed = try store.wrapperURL(alias: alias, version: version, signed: true)
+        try data.write(to: unsigned)
+        if dryRun {
+            print("\(alias): dry run: unsigned wrapper at \(unsigned.path); not signed, not opened, not enabled")
+            return
+        }
+        let before = Library.entries().map { Library.matching(shortcutName, in: $0) } ?? []
+        if let existing = try store.tools().first(where: { $0.alias == alias }), existing.version == version,
+           let uuid = existing.shortcutUUID, before.contains(where: { $0.uuid == uuid }) {
+            print("\(alias): already enabled (\(shortcutName))")
+            return
+        }
+        print("\(alias): signing the wrapper shortcut (uses your iCloud account; Apple receives a copy for validation)…")
+        try Signer.sign(unsigned: unsigned, to: signed)
+        var tool = EnabledTool(alias: alias, source: source, actionID: actionID, version: version, shortcutName: shortcutName,
+                               shortcutUUID: nil, enabledAt: Date(), allowRisky: allowRisky)
+        try store.upsert(tool)
+        _ = Shell.run("/usr/bin/open", [signed.path], timeout: 20)
+        print("\(alias): Shortcuts is showing \"\(shortcutName)\". Click Add Shortcut.")
+        if let note { print("\(alias): note: \(note).") }
+        guard wait else { print("\(alias): pending (not waiting)."); return }
+        if let uuid = waitForImport(name: shortcutName, known: Set(before.map(\.uuid)), seconds: 180) {
+            tool.shortcutUUID = uuid
             try store.upsert(tool)
-            _ = Shell.run("/usr/bin/open", [signed.path], timeout: 20)
-            print("\(r.alias): Shortcuts is showing \"\(r.shortcutName)\". Click Add Shortcut.")
-            if r.verified == nil {
-                print("\(r.alias): note: generated from metadata and not checked on a real run yet.")
+            print("\(alias): enabled (\(uuid)). The first run asks for permission in Shortcuts: choose Always Allow.")
+            if !before.isEmpty {
+                print("\(alias): an older \"\(shortcutName)\" is still in Shortcuts; delete it there (the CLI can't delete shortcuts).")
             }
-            guard wait else { print("\(r.alias): pending (not waiting)."); continue }
-            if let uuid = waitForImport(name: r.shortcutName, known: Set(before.map(\.uuid)), seconds: 180) {
-                tool.shortcutUUID = uuid
-                try store.upsert(tool)
-                print("\(r.alias): enabled (\(uuid)). The first call asks for permission in Shortcuts: choose Always Allow.")
-                if !before.isEmpty {
-                    print("\(r.alias): an older \"\(r.shortcutName)\" is still in Shortcuts; delete it there (the CLI can't delete shortcuts).")
-                }
-            } else {
-                print("\(r.alias): no new shortcut seen after 3 minutes; it stays pending. Run `intents-mcp enable \(r.alias)` again to retry.")
-            }
+        } else {
+            print("\(alias): no new shortcut seen after 3 minutes; it stays pending. Run `intents-mcp enable` again to retry.")
         }
     }
 
@@ -151,7 +161,8 @@ enum Tools {
         var report = CallReport(tool: alias, ok: false, durationMs: 0)
         var category: String?
         do {
-            guard var tool = try store.tools().first(where: { $0.alias == alias }) else { throw ToolError.notEnabled(alias) }
+            let all = try store.tools()
+            guard var tool = all.first(where: { $0.alias == alias && $0.source != "helper" }) else { throw ToolError.notEnabled(alias) }
             let r = try recipe(for: tool)
             if tool.shortcutUUID == nil {
                 // Pending since enable: adopt the shortcut if exactly one with this name exists.
@@ -164,7 +175,8 @@ enum Tools {
             report.ok = true
             report.output = out.text
             if verify {
-                let v = await Verifier.verify(r.readBack, args: args, since: started)
+                let helper = r.readBack.flatMap { k in all.first { $0.alias == ReadBackWrappers.alias(k) }?.shortcutUUID }
+                let v = await Verifier.verify(r.readBack, args: args, since: started, helperUUID: helper)
                 report.verified = v.verified
                 report.detail = v.detail
             }

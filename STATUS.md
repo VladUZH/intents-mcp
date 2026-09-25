@@ -5,7 +5,7 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M2 — enable and run (in progress: code offline; live acceptance needs the human).
+M2 — enable and run: **done 2026-09-25** (acceptance below). Next: M3 (MCP server).
 M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below).
 M0: **GO**, signed off by the human 2026-09-25.
 
@@ -187,6 +187,35 @@ M0: **GO**, signed off by the human 2026-09-25.
   - `intents-mcp enable reminders.add calendar.create-event notes.create
     writing-tools-app-intents.summarize-text notes.create-folder --dry-run` (scratch
     INTENTS_MCP_HOME) → 5 unsigned wrappers, `plutil -lint` OK ×5, nothing enabled/opened.
+- 2026-09-25 — **M2 live acceptance** (human present; approved 3 rounds of clicks):
+  - `intents-mcp enable reminders.add calendar.create-event notes.create
+    writing-tools-app-intents.summarize-text notes.create-folder` → 5× signed, opened, UUID
+    picked up after each "Add Shortcut" (e.g. reminders.add → 80DD35C8-…).
+  - First calls (`intents-mcp call <tool> '<json>' --timeout 90`): reminders.add ok 12.4 s,
+    calendar.create-event ok 3.7 s, notes.create ok 5.0 s (output = note text), Summarize
+    Text (generated) ok 3.2 s with a real summary; **notes.create-folder (generated) FAILED**:
+    `shortcuts run` hung with no visible dialog until the 90 s timeout (likely the metadata
+    key `name` is ignored and the action waits for input: "the command line process pauses,
+    awaiting user input"). Disabled it (`intents-mcp disable notes.create-folder`).
+  - **EventKit read-back doesn't work under agent hosts:** status Reminders `notDetermined`,
+    Calendar `writeOnly`; `requestFullAccess…` returned false with no prompt. TCC attributes
+    the request to the responsible app (this session: VS Code → fish → claude → zsh), not to the
+    binary's embedded Info.plist. → Read-back moved to Shortcuts helpers
+    (`ReadBackWrappers`), which use Shortcuts' own access; EventKit only if full access is
+    already granted.
+  - Helper v1 (Reminders: newest by Creation Date, no filter) returned an unrelated reminder →
+    reported `verified:false` (the exact-title check held; personal title not echoed).
+    Helper v2 filters "Title is <title>" (Apple gallery table-template form) + sort + limit 1.
+  - Final: `call reminders.add '{"title":"intents-mcp test 3","due":"tomorrow at 10:15"}'` →
+    ok, 1.1 s, **verified: "read back through Shortcuts: due 26 Sep 2026 at 10:15"**;
+    `call calendar.create-event …` → ok 1.4 s, **verified: "starts 26 Sep 2026 at 15:00"**;
+    Proofread (generated) → "This sentence has two mistakes in it." (1.9 s).
+  - Tally: **5 tools working end to end** (3 catalog + 2 generated Writing Tools), 2 with
+    verified read-back; 1 generated tool failed and was disabled. `intents-mcp log` shows every
+    call (tool, time, duration, ok, verified; no arguments or output).
+  - Not yet checked live: reminders.add without `due` (the `WFAlertEnabled = "No Alert"` path
+    via a variable). The helper runs didn't visibly prompt for Always Allow.
+  - `swift test` → 29 tests in 7 suites passed.
 
 ## Decisions
 
@@ -236,10 +265,22 @@ M0: **GO**, signed off by the human 2026-09-25.
   invite. "message"/"email" were dropped as too broad ("Get Lock Message").
 - 2026-09-25 — Metadata walk uses fts(3) and skips `Resources` after checking the two known
   metadata paths (≈9–10 s, versus 47 s for the first FileManager version).
+- 2026-09-25 — **Read-back goes through Shortcuts helper wrappers**, one per app
+  ("intents-mcp verify.reminders", "… verify.calendar"), installed by `enable` next to the
+  first tool that needs one, and never exposed as agent tools. The result counts as verified
+  only if the helper's item title equals the created title exactly; otherwise
+  `verified:false`, and the other item's title is never echoed.
+- 2026-09-25 — Generated (metadata) tools stay allowed but are labelled unverified. M2 data:
+  2 of 3 worked (Writing Tools yes; Notes Create Folder hangs). The timeout plus a clear error
+  is the safety net; a tool that fails its first live run should be disabled and noted.
 
 ## Human steps waiting (GATE)
-- 2026-09-25 — **M2 live acceptance:** enable 5 tools for real (5× "Add Shortcut"), first call
-  of each (5× "Always Allow"), EventKit read access for Reminders + Calendar (2 prompts).
+- 2026-09-25 — Please delete in Shortcuts.app: "intents-mcp notes.create-folder" (disabled,
+  hangs) and the older "intents-mcp verify.reminders" copy (the v1; keep the newest).
+  Test data to remove: reminders "intents-mcp test", "… test 2", "… test 3"; events
+  "intents-mcp test" and "… test 2" (tomorrow); note "intents-mcp test". Leftover M0
+  "imcp-spike-…" shortcuts can go too.
+- 2026-09-25 — ~~M2 live acceptance~~ done (see Log).
 - 2026-09-25 — **M0 go/pivot sign-off** (work plan: go/pivot gate before M1).
 - 2026-09-25 — Please delete the stale spike shortcuts in Shortcuts.app (the CLI has no
   delete), **especially `imcp-spike-notes-append-find` and `imcp-spike-notes-append-id`**

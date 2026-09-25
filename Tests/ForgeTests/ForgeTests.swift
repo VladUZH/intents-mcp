@@ -179,3 +179,35 @@ func params(_ a: [String: Any]) -> [String: Any] { a["WFWorkflowActionParameters
         #expect(u.deletingPathExtension().lastPathComponent == Catalog.remindersAdd.shortcutName)
     }
 }
+
+@Suite struct ReadBackWrapperTests {
+    @Test func helperTakesNewestWithoutFilter() {
+        let a = WrapperBuilder_actions(ReadBackWrappers.plist(.event))
+        let find = params(a[0])
+        #expect(a[0]["WFWorkflowActionIdentifier"] as? String == "is.workflow.actions.filter.calendarevents")
+        #expect(find["WFContentItemFilter"] == nil)
+        let r = WrapperBuilder_actions(ReadBackWrappers.plist(.reminder))
+        #expect(r.map { $0["WFWorkflowActionIdentifier"] as! String }.prefix(4) == ["is.workflow.actions.detect.dictionary",
+            "is.workflow.actions.getvalueforkey", "is.workflow.actions.gettext", "is.workflow.actions.filter.reminders"])
+        #expect(params(r[3])["WFContentItemFilter"] != nil)
+        #expect(find["WFContentItemSortProperty"] as? String == "Creation Date")
+        #expect(find["WFContentItemLimitNumber"] as? Int == 1)
+        // The date attachment sits right after "\n<separator>\n".
+        let text = (params(a[2])["WFTextActionText"] as! [String: Any])["Value"] as! [String: Any]
+        let s = text["string"] as! String
+        let ranges = (text["attachmentsByRange"] as! [String: Any]).keys.sorted()
+        let second = Int(ranges.first { $0 != "{0, 1}" }!.dropFirst().split(separator: ",")[0])!
+        #expect(Array(s.utf16)[second] == 0xFFFC)
+        #expect(ReadBackWrappers.shortcutName(.event) == "intents-mcp verify.calendar")
+        #expect(ReadBackWrappers.version(.reminder) == 2)
+    }
+
+    @Test func parsesHelperOutput() {
+        let sep = ReadBackWrappers.separator
+        #expect(ReadBackWrappers.parse("Call dentist\n\(sep)\n26 Sep 2026 at 10:00")! == ("Call dentist", "26 Sep 2026 at 10:00"))
+        #expect(ReadBackWrappers.parse("Call dentist\n\(sep)")! == ("Call dentist", ""))
+        #expect(ReadBackWrappers.parse("garbage") == nil)
+    }
+}
+
+func WrapperBuilder_actions(_ plist: [String: Any]) -> [[String: Any]] { plist["WFWorkflowActions"] as! [[String: Any]] }

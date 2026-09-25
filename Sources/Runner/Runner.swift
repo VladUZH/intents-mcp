@@ -75,23 +75,33 @@ public enum Runner {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         defer { try? FileManager.default.removeItem(at: dir) }
         let input = dir.appendingPathComponent("input.json")
-        let output = dir.appendingPathComponent("output.txt")
         let e = JSONEncoder()
         e.outputFormatting = [.sortedKeys]
         try e.encode(JSONValue.object(wrapperInput(args, for: r))).write(to: input)
 
+        return try runShortcut(uuid: uuid, input: input, alias: r.alias, timeout: timeout)
+    }
+
+    /// `shortcuts run <UUID>` with an optional input file, stdin from /dev/null, and a timeout.
+    public static func runShortcut(uuid: String, input: URL?, alias: String, timeout: Int) throws -> CallOutput {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("intents-mcp-out-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let output = dir.appendingPathComponent("output.txt")
+        var args = ["run", uuid]
+        if let input { args += ["--input-path", input.path] }
+        args += ["--output-path", output.path, "--output-type", "public.plain-text"]
         let started = Date()
-        guard let res = Shell.run("/usr/bin/shortcuts",
-                                  ["run", uuid, "--input-path", input.path, "--output-path", output.path,
-                                   "--output-type", "public.plain-text"], timeout: TimeInterval(timeout)) else {
+        guard let res = Shell.run("/usr/bin/shortcuts", args, timeout: TimeInterval(timeout)) else {
             throw CallError.failed("could not start /usr/bin/shortcuts")
         }
         let ms = Int(Date().timeIntervalSince(started) * 1000)
         if res.timedOut { throw CallError.timeout(timeout) }
         let err = res.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-        if err.contains("Couldn’t find shortcut") || err.contains("Couldn't find shortcut") { throw CallError.notAdded(r.alias) }
+        if err.contains("Couldn’t find shortcut") || err.contains("Couldn't find shortcut") { throw CallError.notAdded(alias) }
         guard res.status == 0 else {
-            throw CallError.failed(err.replacingOccurrences(of: "Error: ", with: "").isEmpty ? "shortcut failed (exit \(res.status))" : err.replacingOccurrences(of: "Error: ", with: ""))
+            let msg = err.replacingOccurrences(of: "Error: ", with: "")
+            throw CallError.failed(msg.isEmpty ? "shortcut failed (exit \(res.status))" : msg)
         }
         let text = (try? String(contentsOf: output, encoding: .utf8)) ?? ""
         return CallOutput(text: text.trimmingCharacters(in: .whitespacesAndNewlines), durationMs: ms)

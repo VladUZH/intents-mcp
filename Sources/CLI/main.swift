@@ -122,7 +122,8 @@ func toolsCommand(_ args: Args) throws {
     if args.flags.contains("json") { return printJSON(tools) }
     if tools.isEmpty { print("No tools enabled. Try `intents-mcp enable reminders.add`."); return }
     for t in tools {
-        print("\(t.alias)  \(t.shortcutUUID == nil ? "pending (click Add Shortcut)" : "ready")  \(t.source)\(t.allowRisky ? "  risky allowed" : "")")
+        let kind = t.source == "helper" ? "read-back helper (not an agent tool)" : t.source
+        print("\(t.alias)  \(t.shortcutUUID == nil ? "pending (click Add Shortcut)" : "ready")  \(kind)\(t.allowRisky ? "  risky allowed" : "")")
     }
 }
 
@@ -132,7 +133,7 @@ func logCommand(_ args: Args) throws {
     let f = ISO8601DateFormatter()
     for e in entries {
         let v = e.verified.map { $0 ? "verified" : "NOT verified" } ?? "unverified"
-        print("\(f.string(from: e.time))  \(e.tool.padding(toLength: 24, withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
+        print("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
     }
 }
 

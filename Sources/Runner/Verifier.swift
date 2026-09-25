@@ -14,14 +14,48 @@ public struct Verification: Sendable, Equatable {
 /// Reads Reminders and Calendar back with EventKit after a call. Asks the user for access the first
 /// time (macOS shows the prompt); without access the result is reported as unverified.
 public enum Verifier {
-    public static func verify(_ kind: ShortcutForge.ReadBack?, args: [String: JSONValue], since start: Date) async -> Verification {
+    /// Read-back through the Shortcuts helper (see ReadBackWrappers); EventKit only when the host
+    /// app already has full access (asking would fail silently under most agent hosts).
+    public static func verify(_ kind: ShortcutForge.ReadBack?, args: [String: JSONValue], since start: Date,
+                              helperUUID: String?) async -> Verification {
         guard let kind else { return Verification(verified: nil, detail: "no read action for this tool") }
         let title = args["title"]?.stringValue ?? ""
+        let type: EKEntityType = kind == .reminder ? .reminder : .event
+        if EKEventStore.authorizationStatus(for: type) == .fullAccess {
+            return await verifyWithEventKit(kind, title: title, since: start)
+        }
+        guard let helperUUID else {
+            return Verification(verified: nil, detail: "not verified: read-back helper \"\(ReadBackWrappers.shortcutName(kind))\" is not enabled")
+        }
+        do {
+            var input: URL?
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("intents-mcp-rb-\(UUID().uuidString)")
+            defer { try? FileManager.default.removeItem(at: dir) }
+            if ReadBackWrappers.takesTitle(kind) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+                input = dir.appendingPathComponent("input.json")
+                try JSONEncoder().encode(["title": title]).write(to: input!)
+            }
+            let out = try Runner.runShortcut(uuid: helperUUID, input: input, alias: ReadBackWrappers.alias(kind), timeout: 20)
+            guard let (found, date) = ReadBackWrappers.parse(out.text) else {
+                return Verification(verified: false, detail: "read-back returned an unexpected shape")
+            }
+            // Never echo another item's title: it may be personal content unrelated to this call.
+            guard found == title else {
+                return Verification(verified: false, detail: "the newest \(kind == .reminder ? "reminder" : "event") is not the one just created")
+            }
+            let what = kind == .reminder ? (date.isEmpty ? "no due date" : "due \(date)") : "starts \(date)"
+            return Verification(verified: true, detail: "read back through Shortcuts: \(what)")
+        } catch {
+            return Verification(verified: nil, detail: "not verified: read-back failed (\(error))")
+        }
+    }
+
+    static func verifyWithEventKit(_ kind: ShortcutForge.ReadBack, title: String, since start: Date) async -> Verification {
         let store = EKEventStore()
         let since = start.addingTimeInterval(-5)
         switch kind {
         case .reminder:
-            guard await access(store, .reminder) else { return noAccess("Reminders") }
             let predicate = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: nil)
             let found: [(String, String?)] = await withCheckedContinuation { cont in
                 store.fetchReminders(matching: predicate) { reminders in
@@ -36,7 +70,6 @@ public enum Verifier {
             }
             return Verification(verified: true, detail: "reminder in list \"\(hit.0)\"" + (hit.1.map { ", due \($0)" } ?? ", no due date"))
         case .event:
-            guard await access(store, .event) else { return noAccess("Calendar") }
             let now = Date()
             let predicate = store.predicateForEvents(withStart: now.addingTimeInterval(-86_400 * 7),
                                                      end: now.addingTimeInterval(86_400 * 365 * 3), calendars: nil)
@@ -46,20 +79,6 @@ public enum Verifier {
             }
             return Verification(verified: true, detail: "event in calendar \"\(e.calendar.title)\", \(format(e.startDate)) – \(format(e.endDate))")
         }
-    }
-
-    static func access(_ store: EKEventStore, _ type: EKEntityType) async -> Bool {
-        switch EKEventStore.authorizationStatus(for: type) {
-        case .fullAccess: return true
-        case .notDetermined:
-            let granted = try? await (type == .reminder ? store.requestFullAccessToReminders() : store.requestFullAccessToEvents())
-            return granted ?? false
-        default: return false
-        }
-    }
-
-    static func noAccess(_ app: String) -> Verification {
-        Verification(verified: nil, detail: "not verified: no read access to \(app) (System Settings › Privacy & Security › \(app))")
     }
 
     static func format(_ d: Date) -> String {
