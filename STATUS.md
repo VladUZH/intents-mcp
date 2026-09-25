@@ -377,6 +377,12 @@ M0: **GO**, signed off by the human 2026-09-25.
   "Successfully published … version 0.1.2" (latest). `docs/06-demo-video.md`: one recording,
   three cuts (15 s social, 35 s Reddit/main, 10 s README GIF). The plan's "append to a note"
   beat was replaced (an entity action; not in v1).
+- 2026-09-26 — After 0.1.2: `brew upgrade` on this Mac tried to build from source. Cause (mine,
+  second time): I edited the formula inside Homebrew's tap directory
+  (`$(brew --repository VladUZH/tap)`), which left it on my `bump-0.1.2` branch without the bottle
+  block. Reset to main + pull → "Pouring intents-mcp-0.1.2.arm64_tahoe.bottle.tar.gz",
+  `--version` 0.1.2, poured_from_bottle=true. Users were never affected (the published tap was
+  correct).
 
 ## Decisions
 
@@ -437,6 +443,9 @@ M0: **GO**, signed off by the human 2026-09-25.
 - 2026-09-25 — License **MIT** and owner/tap **VladUZH / VladUZH/tap** (confirmed by the human).
 - 2026-09-25 — awesome-mcp-servers (needs a Linux build for Glama) and the Docker catalog are
   skipped: the code uses macOS-only frameworks (Security, EventKit).
+- 2026-09-26 — **Tap edits happen in a separate clone** (e.g. `gh repo clone VladUZH/homebrew-tap
+  <scratch>`), never in `$(brew --repository VladUZH/tap)`: Homebrew installs from that
+  checkout, so a feature branch there silently disables the bottle.
 
 ## Human steps waiting (GATE)
 - 2026-09-25 — **M4 GATEs:** ~~public repo~~, ~~tap repo~~, ~~v0.1.0 release~~, ~~MCP Registry~~ done;
