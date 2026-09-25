@@ -370,6 +370,13 @@ M0: **GO**, signed off by the human 2026-09-25.
 - 2026-09-26 — Registry: the first device code expired; restarted `mcp-publisher login github`, the human
   entered the new code → "Successfully published io.github.VladUZH/intents-mcp version 0.1.1";
   registry search → 0.1.0 active (latest=false), **0.1.1 active (latest=true)**.
+- 2026-09-26 — **v0.1.2 released** (human: "release 0.1.2 now"): `swift test` → 39 passed; tag
+  v0.1.2; release with `intents-mcp-0.1.2.mcpb` (sha256 fc679c9f…69a9, matches after download);
+  source sha256 d16d05af…9542. Tap PR #4: `brew style` clean before commit; CI success →
+  pr-pull → `arm64_tahoe: "8ca8249b…6686"`. Registry: token expired again → new device code →
+  "Successfully published … version 0.1.2" (latest). `docs/06-demo-video.md`: one recording,
+  three cuts (15 s social, 35 s Reddit/main, 10 s README GIF). The plan's "append to a note"
+  beat was replaced (an entity action; not in v1).
 
 ## Decisions
 
