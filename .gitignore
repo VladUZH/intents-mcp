@@ -7,3 +7,4 @@ DerivedData/
 *.shortcut
 !Tests/Fixtures/**/*.shortcut
 dist/
+__pycache__/
