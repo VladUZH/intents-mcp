@@ -5,8 +5,7 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M0 — feasibility spike (in progress). Offline half done (wrappers built unsigned, MCP
-handshake decided). **Stopped at GATE:** signing/importing/running test shortcuts.
+M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests running.
 
 ## Log
 
@@ -47,6 +46,40 @@ handshake decided). **Stopped at GATE:** signing/importing/running test shortcut
     swift-sdk#287 reproduced. **hand passes** initialize (2025-06-18) + tools/list.
     tools/call not reached: Codex account usage limit ("try again at 3:41 PM").
   - Blocked: Codex tools/call against `hand` — re-run after the usage limit resets.
+- 2026-09-25 — **GATE passed:** user OK'd signing/importing/running test shortcuts and is
+  present. Live results so far (`Spike/run.py`, stdin=/dev/null):
+  - **Signing (§9 q1):** `shortcuts sign --mode people-who-know-me` → exit 0, `AEA1`, ~0.3 s
+    each, for all 7 + 3 later wrappers. Imports on this Mac via `open <file>` → "Add
+    Shortcut" sheet ("Shared", "Please review this shortcut…"); no Private Sharing issue.
+    (Offline / signed-out not tested.)
+  - **Notes Create Note via App Intent keys** (`com.apple.Notes.CreateNoteLinkAction`,
+    `name`, `contents`): 4 runs, exit 0, note created each time, cold 6.29 s, warm
+    0.55–1.05 s. `name` arrived (note title); **`contents` silently dropped** ("No
+    additional text"). No output (see below). The first run showed a prompt the user
+    didn't answer; later runs didn't prompt.
+  - **Input plumbing (§9 q6):** `imcp-spike-echo` (no app) returns
+    `A=héllo wörld ✓|B=héllo wörld ✓`: both detect.dictionary+getvalueforkey+gettext (A)
+    and the compact aggrandizement form (B) work, non-ASCII intact, 0.26–0.28 s, no prompt.
+  - **Legacy serialization works:** `com.apple.mobilenotes.SharingExtension` with
+    `WFCreateNoteInput` (sweetrb's form) creates the note with title + body. So some App
+    Intents are served by a legacy action whose plist keys ≠ metadata `parameters[].name`,
+    and a wrong key is **silently ignored with exit 0** (§9 q8). The metadata has no hint
+    of the mapping.
+  - **Consent (§9 q5):** each wrapper that writes data prompts once: "Allow “<shortcut>” to
+    save 1 dictionary in a note?" with Don't Allow / Allow Once / Always Allow. The preview
+    shows the data's *source* (the input JSON), not what is written. Unanswered, `shortcuts
+    run` blocks (40 s timeouts), and it can also return exit 0 before the prompt is
+    answered. After Always Allow: 0.40–0.41 s, no prompt.
+  - **Output (§9 q7):** entity result → Stop and Output as plain text gave **no output**
+    file. Result → Get Text → Stop and Output returns the note's text (title + body).
+    `OutputName` doesn't matter (Result/Note/Notes all resolve); `OutputUUID` does.
+    `WFWorkflowHasOutputAction: true` is now set (sweetrb sets it; v1 lacked it; effect
+    not isolated).
+  - **Re-import (§9 q5):** opening an updated file with the same name → "Add Shortcut" →
+    "Replace" still **creates a new shortcut with a new UUID**; the older one was renamed
+    "… 2"; the name now appears twice. **Always Allow does not carry over** (prompt came
+    back, 13.8 s run). The CLI has no delete. The product must re-resolve UUIDs after each
+    import, run by UUID, and tell the user to delete stale copies.
 
 ## Decisions
 

@@ -41,6 +41,7 @@ class Wrapper:
                 "WFQuickActionSurfaces": [],
                 "WFWorkflowHasShortcutInputVariables": True,
                 "WFWorkflowHasOutputFallback": False,
+                "WFWorkflowHasOutputAction": True,  # missing in v1: runs produced no output
                 "WFWorkflowInputContentItemClasses": ["WFStringContentItem", "WFDictionaryContentItem",
                                                       "WFGenericFileContentItem"],
                 "WFWorkflowOutputContentItemClasses": ["WFStringContentItem"],
@@ -80,7 +81,10 @@ def compact_input(keys):
 
 
 def finish(w, label, name="Result"):
-    w.add("is.workflow.actions.output", "out", WFOutput=token_string(w.output(label, name)))
+    # v2: pass the result through Get Text first; an entity sent straight to Stop and
+    # Output produced no output (notes-create-legacy, 2026-09-25).
+    w.add("is.workflow.actions.gettext", "out-text", WFTextActionText=token_string(w.output(label, name)))
+    w.add("is.workflow.actions.output", "out", WFOutput=token_string(w.output("out-text", "Text")))
     return w
 
 
@@ -100,6 +104,59 @@ def notes_create():
           **descriptor("com.apple.Notes", "0000000000", "Notes", "CreateNoteLinkAction"),
           name=token_string(v["name"]), contents=token_string(v["contents"]), interpretAsMarkdown=False)
     return finish(w, "intent")
+
+
+def as_text(w, v, key):
+    """sweetrb: a Dictionary Value is an untyped Content Item; Get Text makes it text."""
+    w.add("is.workflow.actions.gettext", f"text-{key}", WFTextActionText=token_string(v[key]))
+    return w.output(f"text-{key}", "Text")
+
+
+def notes_create_text():
+    """Hypothesis (a): same App Intent keys, but values pass through Get Text."""
+    w = Wrapper("notes-create-text")
+    v = json_input(w, ["name", "contents"])
+    name, contents = as_text(w, v, "name"), as_text(w, v, "contents")
+    w.add("com.apple.Notes.CreateNoteLinkAction", "intent", CustomOutputName="Result",
+          **descriptor("com.apple.Notes", "0000000000", "Notes", "CreateNoteLinkAction"),
+          name=token_string(name), contents=token_string(contents), interpretAsMarkdown=False)
+    return finish(w, "intent")
+
+
+def notes_create_legacy():
+    """Hypothesis (b): the editor's legacy serialization (sweetrb): body under WFCreateNoteInput."""
+    w = Wrapper("notes-create-legacy")
+    v = json_input(w, ["contents"])
+    contents = as_text(w, v, "contents")
+    w.add("com.apple.mobilenotes.SharingExtension", "intent", CustomOutputName="Result",
+          **descriptor("com.apple.Notes", "0000000000", "Notes", "CreateNoteLinkAction"),
+          WFCreateNoteInput=token_string(contents), interpretAsMarkdown=False, OpenWhenRun=False)
+    return diagnose_output(w, "v3", ["Result", "Note", "Notes"])
+
+
+def diagnose_output(w, marker, names):
+    """Returns '<marker>|Result=..|Note=..': which OutputName yields the intent's result."""
+    text, ranges = marker, {}
+    for n in names:
+        text += f"|{n}="
+        ranges[f"{{{len(text)}, 1}}"] = w.output("intent", n)["Value"]
+        text += "\ufffc"
+    w.add("is.workflow.actions.gettext", "diag", WFTextActionText={
+        "WFSerializationType": "WFTextTokenString", "Value": {"string": text, "attachmentsByRange": ranges}})
+    w.add("is.workflow.actions.output", "out", WFOutput=token_string(w.output("diag", "Text")))
+    return w
+
+
+def echo():
+    """Plumbing only, no app: returns 'A=<contents via A>|B=<contents via B>'."""
+    w = Wrapper("echo")
+    a = as_text(w, json_input(w, ["contents"]), "contents")
+    b = compact_input(["contents"])["contents"]
+    w.add("is.workflow.actions.gettext", "joined", WFTextActionText={
+        "WFSerializationType": "WFTextTokenString",
+        "Value": {"string": "A=\ufffc|B=\ufffc",
+                  "attachmentsByRange": {"{2, 1}": a["Value"], "{6, 1}": b["Value"]}}})
+    return finish(w, "joined", "Text")
 
 
 def notes_append_find():
@@ -151,8 +208,9 @@ def macwhisper_transcribe():
     return finish(w, "intent")
 
 
-BUILDERS = {"reminders-add-A": lambda: reminders_add("A"), "reminders-add-B": lambda: reminders_add("B"),
-            "notes-create": notes_create, "notes-append-find": notes_append_find,
+BUILDERS = {"echo": echo, "reminders-add-A": lambda: reminders_add("A"), "reminders-add-B": lambda: reminders_add("B"),
+            "notes-create": notes_create, "notes-create-text": notes_create_text,
+            "notes-create-legacy": notes_create_legacy, "notes-append-find": notes_append_find,
             "notes-append-id": notes_append_id, "coteditor-create": coteditor_create,
             "macwhisper-transcribe": macwhisper_transcribe}
 
