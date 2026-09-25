@@ -5,8 +5,7 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M0 — feasibility spike: **GO (proposed, 2026-09-25)**, waiting for the human go/pivot sign-off.
-Next: M1 (index, census, list), with the changes listed under Decisions.
+M1 — index, census, list, doctor (in progress). M0: **GO**, signed off by the human 2026-09-25.
 
 ## Log
 
@@ -137,6 +136,9 @@ Next: M1 (index, census, list), with the changes listed under Decisions.
   - Not tested: signing offline or signed out (§9 q1), cert expiry (§9 q10), the
     `openAppWhenRun` behaviour beyond CotEditor opening its window (§9 q9), and runs spawned
     by an MCP server under each client (§9 q5; do this in M3).
+- 2026-09-25 — Human: M0 **go** signed off; deleted `imcp-spike-notes-append-find` and
+  `imcp-spike-notes-append-id` (checked: neither is in `shortcuts list` any more).
+- 2026-09-25 — M1 started.
 
 ## Decisions
 
