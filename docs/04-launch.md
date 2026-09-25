@@ -92,7 +92,7 @@ SIP and AMFI off.
 | Homebrew formula (own tap, source build, no dependencies) | **Draft:** `packaging/homebrew/intents-mcp.rb`. url/sha256 need the release tag. Build and test steps pass locally |
 | MCPB bundle | **Built locally:** `scripts/build-mcpb.sh` (universal binary); `mcpb validate` passes; `dist/intents-mcp-0.1.0.mcpb` 711 KB. Not signed or notarized |
 | MCP Registry `server.json` | **Draft:** `packaging/registry/server.json`. Needs the release URL and sha256 |
-| 30-second demo video | **To do (human):** plan in 05 §8, T-5 |
+| Demo video (35 s main, 15 s social, 10 s README GIF) | **To do (human):** script in `06-demo-video.md` |
 | "Which Mac apps are agent-ready" write-up | **Material ready:** census `--json` plus the third-party list above |
 | Social thread (X / Bluesky / Mastodon) | Write by hand. Hook: the census screenshot, then the dentist-reminder clip |
 
