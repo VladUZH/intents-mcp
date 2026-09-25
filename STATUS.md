@@ -288,6 +288,23 @@ M0: **GO**, signed off by the human 2026-09-25.
   re-import): with no due, pass the placeholder "today" plus WFAlertEnabled "No Alert". Rerun →
   ok, 1069 ms, **verified: "read back through Shortcuts: no due date"**, so the placeholder is
   not applied. `swift test` → 39 passed.
+- 2026-09-25 — **Public** (human: "go public with the repo"; registry "do as much as you can",
+  then "Publish now"):
+  - Pre-publish scan of the 59 tracked files: no tokens or keys, no email (commits use
+    `25680204+VladUZH@users.noreply.github.com`), no content from the personal note. The macOS
+    username appears in paths in CLAUDE.md and docs/05. `Spike/__pycache__` untracked.
+  - `gh repo create VladUZH/intents-mcp --public --source . --push` → PUBLIC
+    https://github.com/VladUZH/intents-mcp (topics: mcp, macos, app-intents, shortcuts,
+    claude-code, codex, swift).
+  - Tag `v0.1.0`; release https://github.com/VladUZH/intents-mcp/releases/tag/v0.1.0 with
+    `intents-mcp-0.1.0.mcpb` (sha256 657cc33d…8662; notes say it isn't notarized). Source
+    tarball sha256 b2a30322…dab1.
+  - Tap: `brew tap-new VladUZH/homebrew-tap` (CI trimmed to macos-26; the formula is
+    macOS-only) → public https://github.com/VladUZH/homebrew-tap; formula via PR #2 for
+    bottling (`brew style` → no offenses; `brew audit` blocked locally by the Xcode check).
+  - MCP Registry: `mcp-publisher validate` → "server.json is valid"; `mcp-publisher login
+    github` (the human entered the device code) → `mcp-publisher publish` → "Successfully
+    published io.github.VladUZH/intents-mcp version 0.1.0"; registry search → status "active".
 
 ## Decisions
 
@@ -350,8 +367,7 @@ M0: **GO**, signed off by the human 2026-09-25.
   skipped: the code uses macOS-only frameworks (Security, EventKit).
 
 ## Human steps waiting (GATE)
-- 2026-09-25 — **M4 GATEs:** make the repo public (05 §8:
-  T-14); create the `homebrew-tap` repo and fill the formula's url/sha256 from the v0.1.0 tag;
+- 2026-09-25 — **M4 GATEs:** ~~public repo~~, ~~tap repo~~, ~~v0.1.0 release~~, ~~MCP Registry~~ done;
   clean-Mac/fresh-user install test (the M4 acceptance); Developer ID + notarization deferred by
   the human (MCPB/Claude Desktop only); set up bottling in the tap (Homebrew won't build from
   source on macOS 27 with Xcode 26.6); MCP Registry
