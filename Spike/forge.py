@@ -97,6 +97,21 @@ def reminders_add(variant):
     return finish(w, "intent")
 
 
+def reminders_probe(flag, due):
+    """Bisect 'Can't Import Shortcut … features not supported': install flag × dueDate."""
+    w = Wrapper(f"reminders-{'flag' if flag else 'noflag'}-{'due' if due else 'nodue'}")
+    keys = ["title", "dueDate"] if due else ["title"]
+    v = json_input(w, keys)
+    d = descriptor("com.apple.reminders", "0000000000", "Reminders", "TTRCreateReminderAppIntent")
+    if flag:
+        d["AppIntentDescriptor"]["ActionRequiresAppInstallation"] = True
+    params = {"title": token_string(as_text(w, v, "title"))}
+    if due:
+        params["dueDate"] = token_string(as_text(w, v, "dueDate"))
+    w.add("com.apple.reminders.TTRCreateReminderAppIntent", "intent", **d, **params)
+    return finish(w, "intent")
+
+
 def notes_create():
     w = Wrapper("notes-create")
     v = json_input(w, ["name", "contents"])
@@ -208,7 +223,9 @@ def macwhisper_transcribe():
     return finish(w, "intent")
 
 
-BUILDERS = {"echo": echo, "reminders-add-A": lambda: reminders_add("A"), "reminders-add-B": lambda: reminders_add("B"),
+BUILDERS = {"reminders-flag-nodue": lambda: reminders_probe(True, False),
+            "reminders-noflag-nodue": lambda: reminders_probe(False, False),
+            "reminders-flag-due": lambda: reminders_probe(True, True), "echo": echo, "reminders-add-A": lambda: reminders_add("A"), "reminders-add-B": lambda: reminders_add("B"),
             "notes-create": notes_create, "notes-create-text": notes_create_text,
             "notes-create-legacy": notes_create_legacy, "notes-append-find": notes_append_find,
             "notes-append-id": notes_append_id, "coteditor-create": coteditor_create,

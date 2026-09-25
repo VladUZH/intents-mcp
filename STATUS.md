@@ -80,6 +80,31 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
     "… 2"; the name now appears twice. **Always Allow does not carry over** (prompt came
     back, 13.8 s run). The CLI has no delete. The product must re-resolve UUIDs after each
     import, run by UUID, and tell the user to delete stale copies.
+- 2026-09-25 — M0 live, part 2:
+  - **Third-party (go criterion): PASS.** CotEditor `CreateDocumentIntent` (content:String):
+    prompt "Allow “imcp-spike-coteditor-create” to share 1 dictionary with “CotEditor”?",
+    then the document opened with both lines; wrapper output `COTEDITOR_OK`, exit 0, 11.06 s
+    incl. the prompt. MacWhisper `TranscribeAudioIntent` (audio file as the Shortcut
+    Input via `--input-path`): prompt "…to share 1 media item with “MacWhisper”?", output
+    `This is the Intense MCP Spike, testing transcription.` (source audio: `say` "intents
+    M C P spike"), exit 0, 87.44 s incl. the prompt. App Intent keys worked for both
+    (no legacy mapping).
+  - **Reminders (§9 q3): import rejected.** `com.apple.reminders.TTRCreateReminderAppIntent`
+    (+ descriptor com.apple.reminders / 0000000000; exact ID and keys from shortcutkit's
+    catalog) → "Can't Import Shortcut. This shortcut can't be imported because it contains
+    features not supported on this device." Bisected: 3 probes (with/without
+    `ActionRequiresAppInstallation`, with/without dueDate, title only) all rejected, so
+    the action ID itself is unknown to Shortcuts on this Mac. Intent is hosted in
+    `RemindersAppIntents.framework` (bundle `com.apple.RemindersAppIntents`); nothing on
+    disk links it to Reminders.app. The right Mac ID is still open. Good news: an unknown
+    ID fails **loudly at import**, not silently at run.
+  - **INCIDENT — entity via Find touched a real user note.** `notes-append-find` (Find
+    Notes where Name *is* "imcp-spike legacy title", limit 1 → AppendToNoteLinkAction)
+    matched an unrelated personal note; exit 0, 16.15 s. The run's output was that note's
+    text. Visible content unchanged (the `text` value was apparently dropped, like
+    `contents`), but the note's modified time became 15:45 (the run), and a trailing
+    space or newline may have been added. The filter (Operator 4 on "Name") was evidently
+    ignored, leaving "all notes, limit 1". Entity tests stopped. `notes-append-id` NOT run.
 
 ## Decisions
 
@@ -93,8 +118,22 @@ M0 — feasibility spike (in progress). GATE passed 2026-09-25; live tests runni
   package for the handshake; kept in `Spike/` for reproducibility, not product code.
 - 2026-09-25 — Wrappers are binary plists named `imcp-spike-<key>.unsigned.shortcut`
   (signer needs `.shortcut`; sometimes rejects XML — tech-notes §3.4).
+- 2026-09-25 — **Entities are "not yet" for v1: the simple tier only.** Evidence: the
+  Find-chain filter silently degraded to an arbitrary note (incident above). Rule for any
+  later entity work: never act on a Find result without checking count == 1 AND reading
+  back the matched identity before the act step. Also, no personal content in output by
+  default: the wrapper must not echo whole entities.
+- 2026-09-25 — Wrappers must pass a result through Get Text before Stop and Output
+  (entity → no output otherwise).
+- 2026-09-25 — Param keys can't be trusted from metadata alone (Notes Create Note:
+  `contents` ignored, legacy `WFCreateNoteInput` works; exit 0 either way). So `enable`
+  needs a per-action verified key map, or a read-back check that fails loudly.
 
 ## Human steps waiting (GATE)
+- 2026-09-25 — Please delete the stale spike shortcuts in Shortcuts.app (the CLI has no
+  delete), **especially `imcp-spike-notes-append-find` and `imcp-spike-notes-append-id`**
+  (unsafe: they can act on an arbitrary note). Test data to remove when convenient:
+  notes titled "imcp-spike …", 1 CotEditor document.
 
 - 2026-09-25 — **M0 live half (tech-notes §9 q1–q9).** Needs the user's OK to sign
   (`shortcuts sign --mode people-who-know-me` first; `anyone` only if needed), import
