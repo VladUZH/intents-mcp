@@ -67,15 +67,17 @@ claude mcp add mac -- intents-mcp serve  # Claude Code
 codex mcp add mac -- intents-mcp serve   # Codex
 ```
 
-**Two manual steps per tool, honestly:**
+**The manual steps, honestly:**
 
 1. `enable` opens each wrapper in Shortcuts. Click **Add Shortcut** once. Shortcuts has no
    public way to add a shortcut without that click.
-2. The first time a tool runs, Shortcuts asks for permission. Choose **Always Allow**. You
-   do this again after upgrading a wrapper, which counts as a new shortcut.
+2. The first time a tool runs, Shortcuts **may** ask for permission. Choose **Always
+   Allow**. In testing, it asked every time data went into another app (Notes,
+   CotEditor, MacWhisper), and mostly didn't for Reminders and Calendar. It can ask
+   again after you upgrade a wrapper, because an upgraded wrapper is a new shortcut.
 
 Reminders and Calendar also add one small read-back helper each ("intents-mcp
-verify.reminders" and "intents-mcp verify.calendar"), which cost the same two clicks.
+verify.reminders" and "intents-mcp verify.calendar"), which cost the same clicks.
 
 ## Privacy and safety
 

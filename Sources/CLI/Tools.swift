@@ -80,7 +80,7 @@ enum Tools {
         if let uuid = waitForImport(name: shortcutName, known: Set(before.map(\.uuid)), seconds: 180) {
             tool.shortcutUUID = uuid
             try store.upsert(tool)
-            print("\(alias): enabled (\(uuid)). The first run asks for permission in Shortcuts: choose Always Allow.")
+            print("\(alias): enabled (\(uuid)). If Shortcuts asks for permission on the first run, choose Always Allow.")
             if !before.isEmpty {
                 print("\(alias): an older \"\(shortcutName)\" is still in Shortcuts; delete it there (the CLI can't delete shortcuts).")
             }

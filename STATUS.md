@@ -363,6 +363,10 @@ M0: **GO**, signed off by the human 2026-09-25.
     real run" first (3 catalog + Writing Tools Summarize/Proofread via
     `Catalog.checkedGenerated`), and known-broken actions are marked and refused by `enable`
     (`Catalog.knownBroken`). `swift test` → 39 passed.
+- 2026-09-26 — Consent cost, corrected: in the clean run the human saw **one** dialog (unsure
+  which: the tool or its helper); the call took 3.2 s. Earlier: Notes/CotEditor/MacWhisper always
+  prompted ("save/share 1 dictionary / media item"); Reminders/Calendar mostly not. README, the
+  formula caveats, 04-launch and the `enable` message now say Shortcuts "may" ask, not "will".
 
 ## Decisions
 

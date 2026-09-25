@@ -23,7 +23,7 @@ class IntentsMcp < Formula
         intents-mcp enable reminders.add calendar.create-event
         claude mcp add mac -- #{opt_bin}/intents-mcp serve
         codex mcp add mac -- #{opt_bin}/intents-mcp serve
-      Each tool needs one "Add Shortcut" click and one "Always Allow" on first run.
+      Each tool needs one "Add Shortcut" click; Shortcuts may also ask to "Always Allow" on first run.
       Signing a shortcut uses your iCloud account; Apple receives a copy for validation.
     EOS
   end

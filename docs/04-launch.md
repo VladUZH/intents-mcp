@@ -50,8 +50,10 @@ Contrast: Action Relay does the same indexing but calls a private XPC service, w
 SIP and AMFI off.
 
 **The honest costs and limits** (say them before commenters do):
-- **Two manual steps per tool:** "Add Shortcut" once, and "Always Allow" on the first run.
-  Both happen again after a wrapper upgrade, which counts as a new shortcut.
+- **Manual steps per tool:** "Add Shortcut" once. Shortcuts may also ask to "Always Allow" on
+  the first run: it did every time data went into another app (Notes, CotEditor,
+  MacWhisper), and mostly didn't for Reminders and Calendar (clean run 2026-09-26: one dialog
+  in total, 3.2 s). Both can happen again after a wrapper upgrade (a new shortcut).
 - **Signing uses iCloud, and Apple receives a copy for validation.** Never say "nothing
   leaves your Mac".
 - **Entity actions are not supported yet.** A Shortcuts "Find" filter matched the wrong
