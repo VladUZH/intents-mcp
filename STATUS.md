@@ -305,6 +305,15 @@ M0: **GO**, signed off by the human 2026-09-25.
   - MCP Registry: `mcp-publisher validate` → "server.json is valid"; `mcp-publisher login
     github` (the human entered the device code) → `mcp-publisher publish` → "Successfully
     published io.github.VladUZH/intents-mcp version 0.1.0"; registry search → status "active".
+- 2026-09-25 — **Tap bottle:** PR #2 CI `test-bot (macos-26)` → success (build, audit, formula
+  test). `gh workflow run publish.yml -f pull_request=2` → success; the formula on tap main now
+  has `bottle do … arm64_tahoe: "23dfbfd7…5ff9"` (root_url releases/download/intents-mcp-0.1.0).
+  No Intel bottle (Intel builds from source).
+- 2026-09-25 — `brew install VladUZH/tap/intents-mcp` on this Mac (Homebrew **6.0.19**) → still
+  builds from source → Xcode 27 error. Cause: 6.0.19 has HOMEBREW_MACOS_NEWEST_SUPPORTED="26", so
+  it treats macOS 27 as pre-release and pours no bottles. Upstream Homebrew 7.0.6 (2026-09-21)
+  has NEWEST_SUPPORTED="27". With current Homebrew, the Tahoe bottle should be poured on 27 (to
+  confirm on the human's clean VM = the M4 acceptance). This Mac's Homebrew was not updated.
 
 ## Decisions
 
@@ -369,8 +378,7 @@ M0: **GO**, signed off by the human 2026-09-25.
 ## Human steps waiting (GATE)
 - 2026-09-25 — **M4 GATEs:** ~~public repo~~, ~~tap repo~~, ~~v0.1.0 release~~, ~~MCP Registry~~ done;
   clean-Mac/fresh-user install test (the M4 acceptance); Developer ID + notarization deferred by
-  the human (MCPB/Claude Desktop only); set up bottling in the tap (Homebrew won't build from
-  source on macOS 27 with Xcode 26.6); MCP Registry
+  the human (MCPB/Claude Desktop only); ~~bottling~~ done (arm64_tahoe); MCP Registry
   (`mcp-publisher login github`); demo video; posts.
 - 2026-09-25 — ~~M3 live acceptance~~ done (see Log). Two more test reminders "Call the
   dentist" (tomorrow 10:00) to delete.
