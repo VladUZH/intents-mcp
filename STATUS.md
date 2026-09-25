@@ -5,7 +5,8 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M1 — index, census, list, doctor (in progress). M0: **GO**, signed off by the human 2026-09-25.
+M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below). Next: M2 (enable/run).
+M0: **GO**, signed off by the human 2026-09-25.
 
 ## Log
 
@@ -139,6 +140,29 @@ M1 — index, census, list, doctor (in progress). M0: **GO**, signed off by the 
 - 2026-09-25 — Human: M0 **go** signed off; deleted `imcp-spike-notes-append-find` and
   `imcp-spike-notes-append-id` (checked: neither is in `shortcuts list` any more).
 - 2026-09-25 — M1 started.
+- 2026-09-25 — **M1 built:** SwiftPM package (`Package.swift`, tools 6.1, macOS 14+ to build,
+  no dependencies). `Sources/IntentsIndex` (fts(3) metadata walk, parser, `.loctable`
+  English titles, host-app mapping, Team ID via `SecStaticCode`, tiers, risk flags,
+  aliases, census); `Sources/CLI` (`census`, `list`, `doctor`; `enable`/`disable`/`log` exit 2
+  "not built yet (M2)", `serve` "(M3)"). Tests: `Tests/IntentsIndexTests` + a synthetic
+  fixture (structure only, no personal data).
+- 2026-09-25 — **M1 acceptance (run for real on this Mac):**
+  - `swift test` → `✔ Test run with 16 tests in 3 suites passed`.
+  - `swift build -c release && .build/release/intents-mcp census` (9.4 s) → "This Mac declares
+    1,269 App Intents actions (1,214 unique) in 223 metadata files, across 99 apps and system
+    components. discoverable 949 · simple 48 · entity 655 · other 511 · risky 85 ·
+    third-party: 8 apps, 21 actions (19 discoverable, 0 simple)". The declared 1,269 and 223
+    files match the M0 research exactly; the metadata file list equals `find … -name
+    extract.actionsdata` (223, `comm -3` empty).
+  - `intents-mcp list --json | jq -e 'type=="array" and length==1214 and all(.[];
+    (.id|type)=="string" and (.tier|IN("simple","entity","unsupported")))'` → `true`;
+    aliases unique → `true`. A decode round-trip is covered by `jsonRoundTrip()`.
+  - `intents-mcp doctor` → macOS 27.0.0 ✓, shortcuts CLI with run/list/sign ✓, 70 shortcuts
+    readable ✓, 223 metadata files ✓; exit 0.
+  - Differences from the research counts are definitional: unique = one per (app users see,
+    intent) (research: by fullyQualifiedTypeName, 1,225); discoverable 949 (research 942,
+    over its own unique set). The simple tier (48) follows the spec: discoverable, background,
+    primitive/enum params only, returns output, not a test/debug intent.
 
 ## Decisions
 
@@ -174,6 +198,20 @@ M1 — index, census, list, doctor (in progress). M0: **GO**, signed off by the 
   key → action (strings/dates as token strings) → gettext → output;
   `WFWorkflowHasOutputAction: true`; binary plist; `people-who-know-me` signing; run by
   UUID with stdin=/dev/null; resolve the UUID again after every import.
+- 2026-09-25 — CLI arguments are parsed by hand (no swift-argument-parser): zero
+  dependencies keeps the Homebrew formula simple (no network during the build).
+- 2026-09-25 — `ActionSpec.id` = "<declaring bundle ID>.<intent>" (as in Apple's own
+  extension-hosted workflow). `app` is the app users see (attribution → enclosing app →
+  settings extension → framework-name match → self) and is for display and grouping
+  only. The ID Shortcuts accepts is verified per action in M2 (M0: Reminders' framework
+  intent was refused under `com.apple.reminders`).
+- 2026-09-25 — Titles resolve to English (`.loctable` `en` → `defaultValue` → key →
+  humanized identifier), since agents read them.
+- 2026-09-25 — Risk flag = DeleteEntity protocol, or name words delete/remove/trash/erase/
+  clear/empty/send/reply/forward/call/post/publish/purchase/buy/pay/order/subscribe/share/
+  invite. "message"/"email" were dropped as too broad ("Get Lock Message").
+- 2026-09-25 — Metadata walk uses fts(3) and skips `Resources` after checking the two known
+  metadata paths (≈9–10 s, versus 47 s for the first FileManager version).
 
 ## Human steps waiting (GATE)
 - 2026-09-25 — **M0 go/pivot sign-off** (work plan: go/pivot gate before M1).
@@ -192,3 +230,8 @@ M1 — index, census, list, doctor (in progress). M0: **GO**, signed off by the 
   touching account data).
 
 ## Later
+- `serve` must not rescan on every start (≈10 s): cache the index, keyed by the metadata
+  files' paths and mtimes.
+- Candidate tier widenings, each needing a live check first: file inputs (MacWhisper worked
+  in M0), arrays of plain values, and background actions with no output (return "OK").
+- Risk words are English-name heuristics; review the 85 flagged actions before launch.
