@@ -5,7 +5,9 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M3 — MCP server: **done 2026-09-25** (acceptance below). Weekend scope M0–M3 complete. Next: M4 (packaging and launch prep; several GATEs).
+M4 — packaging and launch prep: **local drafts done 2026-09-25**; the rest is GATEd (public repo, tap,
+release, registry, notarization, demo, posting). Acceptance (clean-Mac install from the tap) not run yet.
+M3 — MCP server: **done 2026-09-25**. Weekend scope M0–M3 complete.
 M2 — enable and run: **done 2026-09-25** (acceptance below).
 M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below).
 M0: **GO**, signed off by the human 2026-09-25.
@@ -248,6 +250,28 @@ M0: **GO**, signed off by the human 2026-09-25.
     structured result, verified, 1559 ms. (The earlier "not exposed" was lazy tool loading.)
   - `intents-mcp log --last 3` → `… reminders.add ok 1392 ms verified mcp:claude-code` and
     `… reminders.add ok 1559 ms verified mcp:codex-mcp-client`.
+- 2026-09-25 — **M4 local drafts** (human: "Yes" to drafting; nothing published):
+  - `README.md` (hero = real census output; checked-working tools table; install; two manual
+    steps per tool; privacy with the iCloud/Apple-copy wording; limits; how it works),
+    `PRIVACY.md`, `LICENSE` (MIT, drafted), `docs/04-launch.md` filled (fact sheet with
+    sources, title options, assets table, what's not done, GATEs).
+  - Checked: `codex mcp add --help` → `codex mcp add [OPTIONS] <NAME> (--url <URL> | --
+    <COMMAND>...)`, so the README line is right. The screen-locked claim is marked as a
+    third-party report, not tested here.
+  - `Sources/Core/Version.swift`: one version (0.1.0) for `--version`, the MCP serverInfo and
+    the formula tag.
+  - `packaging/homebrew/intents-mcp.rb` (draft; url/sha256 placeholders): `ruby -c` → Syntax OK;
+    its build (`swift build --disable-sandbox --configuration release --jobs 8`) → Build
+    complete; its test emulated (INTENTS_MCP_HOME=tmp; initialize with an experimental object
+    + tools/list) → both assertions match; `--version` → 0.1.0. Homebrew 6.0.19 has
+    `tahoe: "26"`.
+  - MCPB: `scripts/build-mcpb.sh` → universal binary (`lipo -archs` → x86_64 arm64; Info.plist
+    embedded); `npx -y @anthropic-ai/mcpb validate dist/mcpb/manifest.json` → "Manifest schema
+    validation passes!"; `mcpb pack` → `dist/intents-mcp-0.1.0.mcpb`, 711,236 bytes, sha256
+    659ae8bf…1941 (local only; binary not signed or notarized).
+  - `packaging/registry/server.json` (draft, description 98 chars ≤ 100; release URL/sha
+    placeholders).
+  - `swift test` → 39 tests in 10 suites passed.
 
 ## Decisions
 
@@ -305,8 +329,17 @@ M0: **GO**, signed off by the human 2026-09-25.
 - 2026-09-25 — Generated (metadata) tools stay allowed but are labelled unverified. M2 data:
   2 of 3 worked (Writing Tools yes; Notes Create Folder hangs). The timeout plus a clear error
   is the safety net; a tool that fails its first live run should be disabled and noted.
+- 2026-09-25 — Drafted **MIT** license and the owner/tap name **VladUZH / VladUZH/tap**
+  (from the git user); both are the human's call before the repo goes public.
+- 2026-09-25 — awesome-mcp-servers (needs a Linux build for Glama) and the Docker catalog are
+  skipped: the code uses macOS-only frameworks (Security, EventKit).
 
 ## Human steps waiting (GATE)
+- 2026-09-25 — **M4 GATEs:** confirm license + GitHub owner; make the repo public (05 §8:
+  T-14); create the `homebrew-tap` repo and fill the formula's url/sha256 from the v0.1.0 tag;
+  clean-Mac/fresh-user install test (the M4 acceptance); decide on Developer ID +
+  notarization (needed for the MCPB/Claude Desktop, not for Homebrew); MCP Registry
+  (`mcp-publisher login github`); demo video; posts.
 - 2026-09-25 — ~~M3 live acceptance~~ done (see Log). Two more test reminders "Call the
   dentist" (tomorrow 10:00) to delete.
 - 2026-09-25 — Please delete in Shortcuts.app: "intents-mcp notes.create-folder" (disabled,

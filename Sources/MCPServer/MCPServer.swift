@@ -8,7 +8,7 @@ import ShortcutForge
 /// 2026-07-28 `server/discover` get -32601 and fall back to `initialize` (as Claude Code does).
 public actor MCPServer {
     public static let supportedVersions = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
-    public static let serverVersion = "0.1.0-dev"
+    public static let serverVersion = IntentsMCPVersion.current
 
     let provider: ToolProvider
     let output: @Sendable (Data) -> Void

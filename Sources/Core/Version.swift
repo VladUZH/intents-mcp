@@ -1,0 +1,4 @@
+/// The release version: `--version`, the MCP serverInfo, and the Homebrew formula's tag (v0.1.0).
+public enum IntentsMCPVersion {
+    public static let current = "0.1.0"
+}

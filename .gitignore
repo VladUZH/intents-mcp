@@ -6,3 +6,4 @@ DerivedData/
 # generated and signed shortcuts belong to the user, not the repo
 *.shortcut
 !Tests/Fixtures/**/*.shortcut
+dist/

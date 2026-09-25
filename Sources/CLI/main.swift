@@ -5,7 +5,7 @@ import MCPServer
 import ShortcutForge
 import Store
 
-let version = "0.1.0-dev"
+let version = IntentsMCPVersion.current
 
 let usage = """
     intents-mcp \(version): App Intents on your Mac as MCP tools. Runs on your Mac; public APIs only.

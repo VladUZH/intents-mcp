@@ -1,0 +1,15 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.VladUZH/intents-mcp",
+  "description": "Your Mac's App Intents (Reminders, Calendar, Notes…) as MCP tools via Shortcuts. Public APIs only.",
+  "repository": { "url": "https://github.com/VladUZH/intents-mcp", "source": "github" },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/VladUZH/intents-mcp/releases/download/v0.1.0/intents-mcp-0.1.0.mcpb",
+      "fileSha256": "REPLACE_WITH_SHA256_OF_THE_RELEASED_MCPB",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "manifest_version": "0.3",
+  "name": "intents-mcp",
+  "display_name": "Mac App Intents",
+  "version": "0.1.0",
+  "description": "Your Mac's app actions (Reminders, Calendar, Notes, Writing Tools…) as tools, through Shortcuts. Public APIs only.",
+  "long_description": "intents-mcp serves the App Intents actions you enable with `intents-mcp enable` (Homebrew CLI) as MCP tools. Each tool runs a signed Shortcut on your Mac; results are read back where possible. Signing uses your iCloud account and Apple receives a copy of each wrapper for validation. No telemetry.",
+  "author": { "name": "VladUZH", "url": "https://github.com/VladUZH" },
+  "homepage": "https://github.com/VladUZH/intents-mcp",
+  "repository": { "type": "git", "url": "https://github.com/VladUZH/intents-mcp" },
+  "license": "MIT",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/intents-mcp",
+    "mcp_config": { "command": "${__dirname}/server/intents-mcp", "args": ["serve"] }
+  },
+  "tools_generated": true,
+  "compatibility": { "platforms": ["darwin"] },
+  "privacy_policies": ["https://github.com/VladUZH/intents-mcp/blob/main/PRIVACY.md"]
+}
