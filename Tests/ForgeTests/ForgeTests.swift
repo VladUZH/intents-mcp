@@ -94,6 +94,12 @@ func params(_ a: [String: Any]) -> [String: Any] { a["WFWorkflowActionParameters
         var entity = spec
         entity.tier = .needsEntity
         #expect(Catalog.generated(from: entity) == nil)
+        var broken = spec
+        broken.alias = "notes.create-folder"
+        #expect(Catalog.generated(from: broken) == nil)  // known not to work
+        var checked = spec
+        checked.alias = "writing-tools-app-intents.summarize-text"
+        #expect(Catalog.generated(from: checked)?.verified != nil)
     }
 }
 

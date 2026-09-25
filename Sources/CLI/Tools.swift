@@ -23,6 +23,7 @@ enum Tools {
     static func recipeForEnable(_ key: String) throws -> (Recipe, ActionSpec?) {
         if let r = Catalog.recipe(key) { return (r, nil) }
         guard let spec = index.lookup(key) else { throw ToolError.unknown(key) }
+        if let why = Catalog.knownBroken[spec.alias] { throw ToolError.notSimple(spec.alias, ["known not to work: \(why)"]) }
         guard let r = Catalog.generated(from: spec) else { throw ToolError.notSimple(spec.alias, spec.tierReasons) }
         return (r, spec)
     }

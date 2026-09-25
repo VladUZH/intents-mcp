@@ -61,7 +61,7 @@ Needs macOS 26 or later (tested on 27.0) and the `shortcuts` command, which ship
 
 ```sh
 intents-mcp census                       # what your Mac has
-intents-mcp list --tier simple           # actions that can be tools today
+intents-mcp list --tier simple           # checked tools first, then actions from metadata
 intents-mcp enable reminders.add calendar.create-event
 claude mcp add mac -- intents-mcp serve  # Claude Code
 codex mcp add mac -- intents-mcp serve   # Codex

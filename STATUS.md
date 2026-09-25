@@ -333,6 +333,36 @@ M0: **GO**, signed off by the human 2026-09-25.
   s → `Progress.run` spinner on stderr, TTY only (checked with `script`: spinner frames, then the
   line clears; `census --json` through a pipe is unchanged). `doctor` no longer truncates tool
   names. `swift test` → 39 passed. (In main; not released yet.)
+- 2026-09-26 — **v0.1.1 released** (human: "do that"): Version.swift, MCPB manifest, registry
+  server.json and the formula bumped; `swift test` → 39 passed; tag v0.1.1; release
+  https://github.com/VladUZH/intents-mcp/releases/tag/v0.1.1 with `intents-mcp-0.1.1.mcpb`
+  (sha256 58ee7b11…9e3e, verified after download); source tarball sha256 7d55a854…ca33. Tap PR
+  #3: the first CI run failed on a `brew style` offense (double blank line), fixed; CI success →
+  pr-pull → `arm64_tahoe: "07dfd4cc…0e56"`. Registry: publish → 401 "token is expired";
+  device login restarted (code given to the human), still pending.
+- 2026-09-26 — **Clean-slate simulation of the M4 acceptance on this Mac** (VM can't sign into
+  iCloud; human chose option A): the human deleted all `intents-mcp …` shortcuts (`shortcuts
+  list | grep -c ^intents-mcp` → 0); store moved to `~/Library/Application Support/
+  intents-mcp.backup-2026-09-26`; `brew uninstall intents-mcp` + `brew untap vladuzh/tap`.
+  Then the README flow verbatim:
+  - `brew install VladUZH/tap/intents-mcp` (auto-update on, fresh tap clone) → 0.1.1,
+    `poured_from_bottle=true`.
+  - `intents-mcp census` → same numbers (10.4 s); `intents-mcp tools` → "No tools enabled."
+  - `intents-mcp enable reminders.add calendar.create-event` → 4 signed and opened; UUIDs picked
+    up after each Add (tool + read-back helper, ×2).
+  - In a new folder: `claude mcp add mac -- intents-mcp serve` → "✔ Connected"; `claude -p "Add a
+    reminder to call the dentist tomorrow at 10…" --allowedTools mcp__mac__reminders_add` →
+    `{"ok":true,"output":"Call the dentist","verified":true,"detail":"read back through
+    Shortcuts: due 27 Sep 2026 at 10:00","durationMs":3151}`; `intents-mcp log` →
+    `reminders.add ok 3151 ms verified mcp:claude-code`.
+  - **Result: PASS** for a clean install on this Mac. Not covered: another Mac or user,
+    first-time macOS permissions (Shortcuts already had Reminders access), another iCloud
+    account.
+  - Found: `list --tier simple` (the README's discovery step) didn't show the checked catalog
+    tools and still offered `notes.create-folder`. Fixed in main: `list` shows "Checked on a
+    real run" first (3 catalog + Writing Tools Summarize/Proofread via
+    `Catalog.checkedGenerated`), and known-broken actions are marked and refused by `enable`
+    (`Catalog.knownBroken`). `swift test` → 39 passed.
 
 ## Decisions
 

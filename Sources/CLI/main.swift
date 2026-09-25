@@ -152,7 +152,27 @@ func list(_ args: Args) throws {
     }
     xs.sort { ($0.app.name, $0.alias) < ($1.app.name, $1.alias) }
     if args.flags.contains("json") { return printJSON(xs) }
-    for a in xs {
+    // Checked recipes first: they are the ones known to work (Reminders and Calendar are
+    // built-in Shortcuts actions, so they are not in the metadata list below).
+    let appFilter = args.options["app"]?.lowercased()
+    let checked = Catalog.all.filter { appFilter == nil || $0.appName.lowercased() == appFilter }
+    if tier == "all" || tier == "simple", !checked.isEmpty {
+        print("Checked on a real run (recommended):")
+        for r in checked {
+            let params = r.exposedInputs.map { "\($0.name)\($0.required ? "" : "?")" }.joined(separator: ", ")
+            print("  \(r.alias)  \(r.title)(\(params))")
+        }
+        for a in xs where Catalog.checkedGenerated[a.alias] != nil {
+            print("  \(a.alias)  \(a.title)(\(a.parameters.map(\.name).joined(separator: ", ")))")
+        }
+        print("\nFrom app metadata (not yet checked; try one with `intents-mcp call` before relying on it):")
+    }
+    for a in xs where Catalog.checkedGenerated[a.alias] == nil {
+        if let why = Catalog.knownBroken[a.alias] {
+            print("\(a.alias)  (known not to work)")
+            print("    \(why)")
+            continue
+        }
         let mark = a.risky ? " [risky]" : ""
         let params = a.parameters.map { "\($0.name)\($0.optional ? "?" : ""):\($0.kind.label)" }.joined(separator: ", ")
         let out = a.outputType.map { " -> \($0)" } ?? ""

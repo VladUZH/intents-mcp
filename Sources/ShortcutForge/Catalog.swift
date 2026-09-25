@@ -10,6 +10,17 @@ public enum Catalog {
 
     public static func recipe(_ alias: String) -> Recipe? { all.first { $0.alias == alias } }
 
+    /// Metadata-generated actions that worked on a real run, by alias.
+    public static let checkedGenerated: [String: String] = [
+        "writing-tools-app-intents.summarize-text": "2026-09-25, macOS 27.0: returned a summary",
+        "writing-tools-app-intents.proofread-text": "2026-09-25, macOS 27.0: returned corrected text",
+    ]
+
+    /// Simple-tier actions that failed a real run, by metadata alias, with what happened.
+    public static let knownBroken: [String: String] = [
+        "notes.create-folder": "hangs until the timeout (2026-09-25, macOS 27.0): the action seems to ignore `name` and wait for input",
+    ]
+
     public static let remindersAdd = Recipe(
         alias: "reminders.add", title: "Add Reminder",
         summary: "Adds a reminder to the default Reminders list, with an optional due time.",
@@ -74,7 +85,7 @@ public enum Catalog {
     /// A recipe generated from metadata for a simple-tier App Intent. Not checked live: parameter
     /// keys are the metadata names, which some actions ignore (M0). Read-back or the first run tells.
     public static func generated(from spec: ActionSpec) -> Recipe? {
-        guard spec.tier == .simple else { return nil }
+        guard spec.tier == .simple, knownBroken[spec.alias] == nil else { return nil }
         let inputs: [RecipeInput] = spec.parameters.compactMap { p in
             let kind: InputKind
             switch p.kind {
@@ -93,6 +104,7 @@ public enum Catalog {
             actionIdentifier: spec.id,
             descriptor: ["TeamIdentifier": spec.app.teamID ?? "0000000000", "BundleIdentifier": bundle,
                          "Name": spec.app.name, "AppIntentIdentifier": spec.intentIdentifier],
-            inputs: inputs, risky: spec.risky, riskReasons: spec.riskReasons, verified: nil, version: 1)
+            inputs: inputs, risky: spec.risky, riskReasons: spec.riskReasons, verified: checkedGenerated[spec.alias],
+            version: 1)
     }
 }
