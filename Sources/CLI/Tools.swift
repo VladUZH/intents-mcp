@@ -1,33 +1,14 @@
 import Core
 import Foundation
 import IntentsIndex
+import MCPServer
 import Runner
 import ShortcutForge
 import Store
 
-enum ToolError: Error, CustomStringConvertible {
-    case unknown(String)
-    case notSimple(String, [String])
-    case risky(String, [String])
-    case notEnabled(String)
-    case pending(String)
-
-    var description: String {
-        switch self {
-        case .unknown(let a): return "no action named \"\(a)\" (see `intents-mcp list`)"
-        case .notSimple(let a, let why):
-            return "\(a) is not in the simple tier yet: \(why.joined(separator: "; "))"
-        case .risky(let a, let why):
-            return "\(a) looks risky (\(why.joined(separator: ", "))); enable it with --allow-risky if you are sure"
-        case .notEnabled(let a): return "\(a) is not enabled; run `intents-mcp enable \(a)` first"
-        case .pending(let a):
-            return "\(a) is waiting for its shortcut: click Add Shortcut in Shortcuts, or run `intents-mcp enable \(a)` again"
-        }
-    }
-}
-
 enum Tools {
     static let store = Store()
+    static let service = ToolService(store: store)
 
     /// One scan per command (about 10 s).
     nonisolated(unsafe) static var cachedIndex: ActionIndex?
@@ -47,19 +28,7 @@ enum Tools {
         return (r, spec)
     }
 
-    /// The recipe for an enabled tool, without rescanning (generated specs are saved at enable time).
-    static func recipe(for tool: EnabledTool) throws -> Recipe {
-        if tool.source == "catalog", let r = Catalog.recipe(tool.alias) { return r }
-        let url = try specURL(tool.alias, tool.version)
-        let spec = try JSONDecoder().decode(ActionSpec.self, from: Data(contentsOf: url))
-        guard let r = Catalog.generated(from: spec) else { throw ToolError.notSimple(tool.alias, spec.tierReasons) }
-        return r
-    }
-
-    static func specURL(_ alias: String, _ version: Int) throws -> URL {
-        try store.wrapperURL(alias: alias, version: version, signed: true).deletingLastPathComponent()
-            .appendingPathComponent("action.json")
-    }
+    static func specURL(_ alias: String, _ version: Int) throws -> URL { try service.specURL(alias, version) }
 
     // MARK: enable
 
@@ -145,51 +114,9 @@ enum Tools {
 
     // MARK: call
 
-    struct CallReport: Encodable {
-        var tool: String
-        var ok: Bool
-        var output: String?
-        var error: String?
-        var verified: Bool?
-        var detail: String?
-        var durationMs: Int
-    }
-
-    /// Runs one enabled tool, reads the result back where possible, and logs the call.
     static func call(_ alias: String, args: [String: JSONValue], caller: String, timeout: Int = 30, verify: Bool = true) async -> CallReport {
-        let started = Date()
-        var report = CallReport(tool: alias, ok: false, durationMs: 0)
-        var category: String?
-        do {
-            let all = try store.tools()
-            guard var tool = all.first(where: { $0.alias == alias && $0.source != "helper" }) else { throw ToolError.notEnabled(alias) }
-            let r = try recipe(for: tool)
-            if tool.shortcutUUID == nil {
-                // Pending since enable: adopt the shortcut if exactly one with this name exists.
-                let found = Library.entries().map { Library.matching(tool.shortcutName, in: $0) } ?? []
-                guard found.count == 1 else { throw ToolError.pending(alias) }
-                tool.shortcutUUID = found[0].uuid
-                try store.upsert(tool)
-            }
-            let out = try Runner.call(r, uuid: tool.shortcutUUID!, args: args, timeout: timeout)
-            report.ok = true
-            report.output = out.text
-            if verify {
-                let helper = r.readBack.flatMap { k in all.first { $0.alias == ReadBackWrappers.alias(k) }?.shortcutUUID }
-                let v = await Verifier.verify(r.readBack, args: args, since: started, helperUUID: helper)
-                report.verified = v.verified
-                report.detail = v.detail
-            }
-        } catch let e as CallError {
-            report.error = e.description
-            category = e.category
-        } catch {
-            report.error = "\(error)"
-            category = "setup"
-        }
-        report.durationMs = Int(Date().timeIntervalSince(started) * 1000)
-        try? store.append(LogEntry(tool: alias, time: started, durationMs: report.durationMs, ok: report.ok,
-                                   verified: report.verified, error: category, caller: caller))
-        return report
+        var svc = service
+        svc.timeout = timeout
+        return await svc.call(alias, args: args, caller: caller, verify: verify)
     }
 }

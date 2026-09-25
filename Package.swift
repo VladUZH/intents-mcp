@@ -16,13 +16,15 @@ let package = Package(
         .target(name: "Store", dependencies: ["Core"]),
         .target(name: "ShortcutForge", dependencies: ["Core", "IntentsIndex"]),
         .target(name: "Runner", dependencies: ["Core", "ShortcutForge"]),
+        .target(name: "MCPServer", dependencies: ["Core", "IntentsIndex", "Store", "ShortcutForge", "Runner"]),
         .executableTarget(
             name: "intents-mcp",
-            dependencies: ["Core", "IntentsIndex", "Store", "ShortcutForge", "Runner"],
+            dependencies: ["Core", "IntentsIndex", "Store", "ShortcutForge", "Runner", "MCPServer"],
             path: "Sources/CLI",
             linkerSettings: [.unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                                            "-Xlinker", infoPlist])]),
         .testTarget(name: "IntentsIndexTests", dependencies: ["IntentsIndex"], resources: [.copy("Fixtures")]),
         .testTarget(name: "ForgeTests", dependencies: ["Core", "ShortcutForge", "Runner", "Store", "IntentsIndex"]),
+        .testTarget(name: "MCPServerTests", dependencies: ["Core", "MCPServer", "ShortcutForge"], resources: [.copy("Fixtures")]),
     ]
 )

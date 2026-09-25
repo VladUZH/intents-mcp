@@ -1,0 +1,5 @@
+{"jsonrpc":"2.0","id":"server-discover-probe-1","method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"claude-code","title":"Claude Code","version":"2.1.282"},"io.modelcontextprotocol/clientCapabilities":{"roots":{"listChanged":true},"elicitation":{"form":{},"url":{}}}}}}
+{"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"roots":{"listChanged":true},"elicitation":{}},"clientInfo":{"name":"claude-code","title":"Claude Code","version":"2.1.282"}},"jsonrpc":"2.0","id":0}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"method":"tools/list","jsonrpc":"2.0","id":1}
+{"method":"tools/call","params":{"name":"reminders_add","arguments":{"title":"Call the dentist","due":"tomorrow at 10:00"},"_meta":{"claudecode/toolUseId":"toolu_TEST","progressToken":2}},"jsonrpc":"2.0","id":2}

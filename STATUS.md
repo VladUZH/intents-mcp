@@ -5,7 +5,8 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M2 — enable and run: **done 2026-09-25** (acceptance below). Next: M3 (MCP server).
+M3 — MCP server (in progress: built and tested offline; live acceptance needs the human).
+M2 — enable and run: **done 2026-09-25** (acceptance below).
 M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below).
 M0: **GO**, signed off by the human 2026-09-25.
 
@@ -216,6 +217,24 @@ M0: **GO**, signed off by the human 2026-09-25.
   - Not yet checked live: reminders.add without `due` (the `WFAlertEnabled = "No Alert"` path
     via a variable). The helper runs didn't visibly prompt for Always Allow.
   - `swift test` → 29 tests in 7 suites passed.
+- 2026-09-25 — **M3 built (offline):** `Sources/MCPServer` = hand-written JSON-RPC stdio
+  server (initialize with version echo/fallback, ping, tools/list, tools/call; `server/discover`
+  → -32601; parse error → -32700; concurrent requests, actor-serialized writes; stdout is
+  JSON-RPC only) + `ToolService` (the shared call pipeline, now also used by `intents-mcp call`).
+  Tool names are Claude-safe (`reminders.add` → `reminders_add`); schemas come from the recipes
+  (`additionalProperties: false`; derived inputs hidden); risky → `destructiveHint`; generated
+  tools say "not yet checked on a real run"; tool failures are `isError` results. `intents-mcp
+  serve [--timeout 50]`.
+  - `swift test` → 39 tests in 10 suites passed, incl. sanitized replays of the recorded Claude
+    Code and Codex (experimental-object) handshakes.
+  - Real binary, no shortcuts run: piped initialize + tools/list → the 5 enabled tools
+    (helpers and the disabled create-folder excluded).
+  - `claude -p "List the exact names of the tools…" --strict-mcp-config --mcp-config
+    '{"mcpServers":{"mac":{"command":".build/release/intents-mcp","args":["serve"]}}}'` → the
+    5 names (Claude Code: `mcp__mac__reminders_add` …).
+  - Codex 0.157.0 (npx, traced): initialize + tools/list answered in full, but the model said
+    the tools "are not exposed in this session". Codex appears to load MCP tools lazily. Check
+    in the live run.
 
 ## Decisions
 
@@ -275,6 +294,9 @@ M0: **GO**, signed off by the human 2026-09-25.
   is the safety net; a tool that fails its first live run should be disabled and noted.
 
 ## Human steps waiting (GATE)
+- 2026-09-25 — **M3 live acceptance:** in Claude Code and in Codex, "add a reminder to call
+  the dentist tomorrow at 10" → reminder created + verified + in `intents-mcp log` (2 test
+  reminders; maybe an Always Allow if the MCP context prompts).
 - 2026-09-25 — Please delete in Shortcuts.app: "intents-mcp notes.create-folder" (disabled,
   hangs) and the older "intents-mcp verify.reminders" copy (the v1; keep the newest).
   Test data to remove: reminders "intents-mcp test", "… test 2", "… test 3"; events

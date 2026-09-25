@@ -1,6 +1,7 @@
 import Core
 import Foundation
 import IntentsIndex
+import MCPServer
 import ShortcutForge
 import Store
 
@@ -20,7 +21,8 @@ let usage = """
       intents-mcp tools [--json]                   the enabled tools
       intents-mcp log [--last <n>] [--json]        what was called (no personal content)
       intents-mcp doctor [--json]                  check this Mac is ready
-      intents-mcp serve                            (not built yet: M3)
+      intents-mcp serve [--timeout <s>]            MCP over stdio for Claude Code, Codex, …
+                                                   (claude mcp add mac -- intents-mcp serve)
       intents-mcp --version
 
     """
@@ -180,7 +182,9 @@ do {
     case "call": exit(try await callCommand(args))
     case "tools": try toolsCommand(args)
     case "log": try logCommand(args)
-    case "serve": FileHandle.standardError.write(Data("not built yet (M3)\n".utf8)); exit(2)
+    case "serve":
+        // stdout is the JSON-RPC channel: nothing else may be printed there.
+        await MCPServer.serveStdio(provider: ToolService(store: Tools.store, timeout: Int(args.options["timeout"] ?? "50") ?? 50))
     case nil, "help": print(usage, terminator: "")
     case let c?: throw CLIError.usage("unknown command: \(c)")
     }
