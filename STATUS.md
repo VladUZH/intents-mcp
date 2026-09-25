@@ -5,7 +5,7 @@ what is blocked and why, and decisions made where the docs were silent.
 
 ## Current milestone
 
-M3 — MCP server (in progress: built and tested offline; live acceptance needs the human).
+M3 — MCP server: **done 2026-09-25** (acceptance below). Weekend scope M0–M3 complete. Next: M4 (packaging and launch prep; several GATEs).
 M2 — enable and run: **done 2026-09-25** (acceptance below).
 M1 — index, census, list, doctor: **done 2026-09-25** (acceptance below).
 M0: **GO**, signed off by the human 2026-09-25.
@@ -235,6 +235,19 @@ M0: **GO**, signed off by the human 2026-09-25.
   - Codex 0.157.0 (npx, traced): initialize + tools/list answered in full, but the model said
     the tools "are not exposed in this session". Codex appears to load MCP tools lazily. Check
     in the live run.
+- 2026-09-25 — **M3 live acceptance: PASS in both clients** (human approved; no dialogs appeared).
+  - Claude Code 2.1.282: `claude -p "Add a reminder to call the dentist tomorrow at 10. Then tell
+    me exactly what the tool returned…" --strict-mcp-config --mcp-config
+    '{"mcpServers":{"mac":{"command":"…/.build/release/intents-mcp","args":["serve"]}}}'
+    --allowedTools mcp__mac__reminders_add` → `{"ok":true,"output":"Call the dentist",
+    "verified":true,"detail":"read back through Shortcuts: due 26 Sep 2026 at 10:00",
+    "durationMs":1392}`.
+  - Codex 0.157.0: `npx -y @openai/codex@latest exec … -c mcp_servers.mac.command=… -c
+    mcp_servers.mac.args=["serve"] -c mcp_servers.mac.default_tools_approval_mode="approve"
+    "Add a reminder to call the dentist tomorrow at 10 using the mac MCP server…"` → the same
+    structured result, verified, 1559 ms. (The earlier "not exposed" was lazy tool loading.)
+  - `intents-mcp log --last 3` → `… reminders.add ok 1392 ms verified mcp:claude-code` and
+    `… reminders.add ok 1559 ms verified mcp:codex-mcp-client`.
 
 ## Decisions
 
@@ -294,9 +307,8 @@ M0: **GO**, signed off by the human 2026-09-25.
   is the safety net; a tool that fails its first live run should be disabled and noted.
 
 ## Human steps waiting (GATE)
-- 2026-09-25 — **M3 live acceptance:** in Claude Code and in Codex, "add a reminder to call
-  the dentist tomorrow at 10" → reminder created + verified + in `intents-mcp log` (2 test
-  reminders; maybe an Always Allow if the MCP context prompts).
+- 2026-09-25 — ~~M3 live acceptance~~ done (see Log). Two more test reminders "Call the
+  dentist" (tomorrow 10:00) to delete.
 - 2026-09-25 — Please delete in Shortcuts.app: "intents-mcp notes.create-folder" (disabled,
   hangs) and the older "intents-mcp verify.reminders" copy (the v1; keep the newest).
   Test data to remove: reminders "intents-mcp test", "… test 2", "… test 3"; events
