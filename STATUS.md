@@ -512,7 +512,13 @@ M0: **GO**, signed off by the human 2026-09-25.
   success; bottle arm64_tahoe 7ec6f24a…ecba. Registry: published (human entered the device
   code), 0.1.5 isLatest. This Mac: `brew upgrade` 0.1.4 → 0.1.5, poured_from_bottle=true.
 - 2026-09-26 — doctor's iCloud line shortened to "signs tools on enable; Apple receives a copy"
-  (was 149 columns and wrapped mid-word; now 74). Not released yet (next release).
+  (was 149 columns and wrapped mid-word; now 74). Released in 0.1.6.
+- 2026-09-26 — **0.1.6 released** (human approved): doctor's iCloud line. Tag v0.1.6, GitHub
+  release with `intents-mcp-0.1.6.mcpb` (sha256 714d7aeb…ffb2, verified after download); source
+  tarball a4621dbb…5337. Tap PR #8 (separate clone, `brew style` clean) → CI pass (2m44s) →
+  publish.yml success; bottle arm64_tahoe 6d180d69…8767. Registry: published (human entered the
+  device code), 0.1.6 isLatest. This Mac: `brew upgrade` 0.1.5 → 0.1.6, poured_from_bottle=true;
+  `intents-mcp doctor` shows the short iCloud line.
 
 ## Decisions
 
