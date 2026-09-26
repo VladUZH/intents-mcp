@@ -99,7 +99,7 @@ enum Tools {
             // By UUID, not name: a shortcut the user renamed is still the same wrapper.
             if let uuid = existing.shortcutUUID, library.contains(where: { $0.uuid == uuid }) {
                 store.removeSignedWrapper(alias: alias, version: version)
-                Out.line("\(alias): already enabled (\(shortcutName))")
+                Out.line("\(alias): " + Style.green("already enabled") + " (\(shortcutName))")
                 return .alreadyEnabled
             }
             // Pending, and the user has since added exactly one new copy: adopt it instead of importing another.
@@ -107,7 +107,7 @@ enum Tools {
             if existing.shortcutUUID == nil, fresh.count == 1 {
                 try store.update(alias) { $0.shortcutUUID = fresh[0].uuid }
                 store.removeSignedWrapper(alias: alias, version: version)
-                Out.line("\(alias): enabled (\(fresh[0].uuid)).")
+                Out.line("\(alias): " + Style.green("enabled") + " (\(fresh[0].uuid)).")
                 return .enabled
             }
         }
@@ -121,7 +121,7 @@ enum Tools {
         let opened = Shell.run("/usr/bin/open", [signed.path], timeout: 20)
         if opened?.status != 0, previous?.shortcutUUID != nil, previous?.version == version, previous?.actionID == actionID {
             // Keep the working record (and its schema); the user can retry when `open` works.
-            Out.line("\(alias): couldn't open the new wrapper in Shortcuts; the current one stays in use. Run `intents-mcp enable \(enableKey(alias))` again later.")
+            Out.line(Style.commands("\(alias): couldn't open the new wrapper in Shortcuts; the current one stays in use. Run `intents-mcp enable \(enableKey(alias))` again later."))
             return .pending
         }
         // Only now, with the wrapper it describes about to be imported, record the action's schema.
@@ -131,18 +131,18 @@ enum Tools {
             Out.line("\(alias): couldn't open the wrapper in Shortcuts. Open this file yourself and click Add Shortcut; intents-mcp picks it up on the next `enable`, `doctor`, `serve` or call:\n  \(signed.path)")
             return .pending
         }
-        Out.line("\(alias): Shortcuts is showing \"\(shortcutName)\". Click Add Shortcut.")
+        Out.line("\(alias): Shortcuts is showing \"\(shortcutName)\". " + Style.bold("Click Add Shortcut."))
         if let note { Out.line("\(alias): note: \(note).") }
-        guard wait else { Out.line("\(alias): pending (not waiting). After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` to finish."); return .pending }
+        guard wait else { Out.line(Style.commands("\(alias): pending (not waiting). After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` to finish.")); return .pending }
         guard let uuid = await waitForImport(name: shortcutName, known: Set(before.map(\.uuid)), seconds: 180) else {
-            Out.line("\(alias): no new shortcut seen after 3 minutes; it stays pending. After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` again to finish.")
+            Out.line(Style.commands("\(alias): no new shortcut seen after 3 minutes; it stays pending. After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` again to finish."))
             return .pending
         }
         tool.shortcutUUID = uuid
         try store.upsert(tool)
         // The signed file carries your Apple Account's signing identity; it isn't needed after import.
         try? FileManager.default.removeItem(at: signed)
-        Out.line("\(alias): enabled (\(uuid)). If Shortcuts asks for permission on the first run, choose Always Allow.")
+        Out.line("\(alias): " + Style.green("enabled") + " (\(uuid)). If Shortcuts asks for permission on the first run, choose Always Allow.")
         // Name stale copies by the names they have now (Replace renames the old one to "… 2").
         let now = await Library.entries().map { Library.matching(shortcutName, in: $0) } ?? []
         for s in now where s.uuid != uuid {
@@ -183,7 +183,7 @@ enum Tools {
             guard !removed.isEmpty else { unknown.append(key); continue }
             for t in removed {
                 try? FileManager.default.removeItem(at: store.wrappersDir.appendingPathComponent("\(t.alias).v\(t.version)"))
-                Out.line("\(t.alias): disabled. Agents can no longer call it.")
+                Out.line("\(t.alias): " + Style.bold("disabled") + ". Agents can no longer call it.")
                 printCopies(t.shortcutName, uuid: t.shortcutUUID, library: library)
             }
         }

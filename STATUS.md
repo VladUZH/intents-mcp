@@ -497,6 +497,15 @@ M0: **GO**, signed off by the human 2026-09-25.
   publish.yml success; bottle arm64_tahoe 0d65adb7…3e4a. Registry: login (human entered the
   device code) → published, 0.1.4 isLatest. This Mac: `brew upgrade` 0.1.3 → 0.1.4,
   poured_from_bottle=true; `tools` under a pty paced ≈ 45 ms per line.
+- 2026-09-26 — **Colors in terminal output** (human request): Core `TerminalStyle` (on only
+  for a TTY with TERM set, not dumb, and `NO_COLOR` unset/empty) + CLI `Style` (basic ANSI:
+  bold, dim, green, yellow, red, bold cyan for the census headline number). census: headline
+  bold, numbers bold, simple green, risky yellow, unsupported notes dim, footnote dim; "Most
+  actions" name column tightened to the longest name. doctor ✓/!/✗/· green/yellow/red/dim;
+  tools ready green, other states yellow with the fix command bold; log ok/verified green,
+  error/NOT verified red; enable "Click Add Shortcut." bold. Checks: under a pty, census and
+  doctor output with escape codes removed equals the piped output line for line (census ≤ 78
+  columns); `NO_COLOR=1` and pipes → no escape codes. `swift test` → 68 tests in 17 suites pass.
 
 ## Decisions
 

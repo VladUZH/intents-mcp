@@ -150,23 +150,25 @@ func census(_ args: Args) {
     if args.flags.contains("json") { return printJSON(c) }
     let t = c.byTier
     // Fits an 80-column terminal, so no line breaks mid-word as it appears line by line.
-    let rows = [
-        ("discoverable in Shortcuts", c.discoverable, ""),
-        ("simple tier", t["simple"] ?? 0, "background, plain inputs, returns output"),
-        ("need an entity (a note…)", t["entity"] ?? 0, "not supported yet"),
-        ("other", t["unsupported"] ?? 0, "hidden, opens the app, no output, files…"),
-        ("flagged risky", c.risky, "delete, send, buy, share; off unless allowed"),
+    let rows: [(label: String, n: Int, note: String, color: (String) -> String)] = [
+        ("discoverable in Shortcuts", c.discoverable, "", { $0 }),
+        ("simple tier", t["simple"] ?? 0, "background, plain inputs, returns output", Style.green),
+        ("need an entity (a note…)", t["entity"] ?? 0, "not supported yet", Style.dim),
+        ("other", t["unsupported"] ?? 0, "hidden, opens the app, no output, files…", Style.dim),
+        ("flagged risky", c.risky, "delete, send, buy, share; off unless allowed", Style.yellow),
     ]
-    let labelWidth = rows.map(\.0.count).max()! + 2
-    let numberWidth = rows.map { grouped($0.1).count }.max()!
+    let labelWidth = rows.map(\.label.count).max()! + 2
+    let numberWidth = rows.map { grouped($0.n).count }.max()!
     var lines = [
-        "This Mac declares \(grouped(c.declaredActions)) App Intents actions (\(grouped(c.uniqueActions)) unique)",
+        Style.bold("This Mac declares ") + Style.accent(grouped(c.declaredActions))
+            + Style.bold(" App Intents actions (\(grouped(c.uniqueActions)) unique)"),
         "in \(c.metadataFiles) metadata files, across \(c.apps) apps and system components.",
         "",
     ]
-    lines += rows.map { label, n, note in
-        "  \(label.padding(toLength: labelWidth, withPad: " ", startingAt: 0))\(grouped(n).leftPad(numberWidth))"
-            + (note.isEmpty ? "" : "  \(note)")
+    // Color after padding: escape codes take no columns.
+    lines += rows.map { r in
+        "  " + r.color(r.label.padding(toLength: labelWidth, withPad: " ", startingAt: 0))
+            + Style.bold(grouped(r.n).leftPad(numberWidth)) + (r.note.isEmpty ? "" : "  " + r.color(r.note))
     }
     lines += [
         "",
@@ -175,8 +177,11 @@ func census(_ args: Args) {
         "",
         "Most actions:",
     ]
+    let appWidth = min(34, (c.topApps.map(\.app.count).max() ?? 0) + 2)
     lines += c.topApps.map { a in
-        "  \(a.app.padding(toLength: 34, withPad: " ", startingAt: 0)) \(String(a.actions).leftPad(4))   simple \(a.simple)"
+        let simple = "simple \(a.simple)"
+        return "  \(a.app.padding(toLength: appWidth, withPad: " ", startingAt: 0))"
+            + Style.bold(String(a.actions).leftPad(4)) + "  " + (a.simple > 0 ? Style.green(simple) : Style.dim(simple))
     }
     lines += [
         "",
@@ -184,7 +189,7 @@ func census(_ args: Args) {
         "usable: some declared actions are refused by Shortcuts on the Mac, and",
         "Reminders and Calendar work through built-in Shortcuts actions that are not",
         "counted here.",
-    ]
+    ].map { $0.isEmpty ? $0 : Style.dim($0) }
     Out.block(lines)
     for e in index.errors { FileHandle.standardError.write(Data("warning: \(e)\n".utf8)) }
 }
@@ -228,7 +233,8 @@ func toolsCommand(_ args: Args) throws {
             default: break
             }
         }
-        lines.append("\(t.alias)  \(state)  \(kind)\(t.allowRisky ? "  risky allowed" : "")")
+        let shown = state == "ready" ? Style.green(state) : Style.yellow(Style.commands(state))
+        lines.append("\(Style.bold(t.alias))  \(shown)  \(Style.dim(kind))\(t.allowRisky ? "  " + Style.yellow("risky allowed") : "")")
     }
     Out.block(lines)
 }
@@ -255,10 +261,13 @@ func logCommand(_ args: Args) throws {
     for e in entries {
         let v = e.verified.map { $0 ? "verified" : "NOT verified" } ?? "unverified"
         if e.event == "start" {
-            lines.append("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.error ?? "")  \(e.caller)")
+            let note = e.error ?? ""
+            lines.append("\(Style.dim(f.string(from: e.time)))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(note.hasPrefix("running") ? Style.yellow(note) : Style.red(note))  \(Style.dim(e.caller))")
             continue
         }
-        lines.append("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
+        let result = e.ok ? Style.green("ok   ") : Style.red("error")
+        let check = e.verified == true ? Style.green(v) : e.verified == false ? Style.red(v) : Style.dim(v)
+        lines.append("\(Style.dim(f.string(from: e.time)))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(result) \(String(e.durationMs).leftPad(6)) ms  \(check)\(e.error.map { "  " + Style.red("(\($0))") } ?? "")  \(Style.dim(e.caller))")
     }
     Out.block(lines)
 }

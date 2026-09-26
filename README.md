@@ -138,6 +138,8 @@ In a terminal, the text output of `census`, `list`, `doctor`, `tools`, `log`, `e
 over 300 lines (such as a full `list`), pipes, files and `--json` print at once.
 `INTENTS_MCP_LINE_DELAY_MS` sets the gap in milliseconds: `0` turns it off, and a larger value
 such as `120` is slower, for a screen recording (it may then add up to 10 s to a command).
+In a terminal, output also uses a few colors (green for what works, yellow for what needs you,
+red for failures). Set `NO_COLOR=1` to turn them off; pipes, files and `--json` never get them.
 
 ## Limits
 

@@ -132,8 +132,15 @@ enum Doctor {
             let names = ((try? Tools.store.tools()) ?? []).map { "tool \($0.alias)" } + ["App Intents metadata"]
             let width = names.map(\.count).max()!
             cs = await checks { c in
-                let mark = ["ok": "✓", "warn": "!", "fail": "✗", "info": "·"][c.status] ?? "?"
-                Out.line("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(c.detail)")
+                let mark: String = switch c.status {
+                case "ok": Style.green("✓")
+                case "warn": Style.yellow("!")
+                case "fail": Style.red("✗")
+                case "info": Style.dim("·")
+                default: "?"
+                }
+                let detail = c.status == "info" ? Style.dim(c.detail) : Style.commands(c.detail)
+                Out.line("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(detail)")
             }
         }
         return cs.contains { $0.status == "fail" } ? 1 : 0
