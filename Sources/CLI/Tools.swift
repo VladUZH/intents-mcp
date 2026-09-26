@@ -32,9 +32,15 @@ enum Tools {
 
     static func specURL(_ alias: String, _ version: Int) throws -> URL { try service.specURL(alias, version) }
 
-    /// Helpers are installed by the tool that uses them, not by their own alias.
-    static func enableKey(_ alias: String) -> String {
-        ReadBackWrappers.kind(forAlias: alias).map(ReadBackWrappers.owner) ?? alias
+    /// What to pass to `enable` to (re)install this entry: helpers are installed by the tool that uses
+    /// them; generated tools by action id (an alias can shift to another action after an app update).
+    static func enableKey(_ alias: String, actionID: String? = nil) -> String {
+        ReadBackWrappers.kind(forAlias: alias).map(ReadBackWrappers.owner) ?? actionID ?? alias
+    }
+
+    /// Whether any enabled agent tool reads back through this helper.
+    static func helperInUse(_ alias: String, among tools: [EnabledTool]) -> Bool {
+        tools.contains { o in o.source != "helper" && (try? service.recipe(for: o))?.readBack.map(ReadBackWrappers.alias) == alias }
     }
 
     // MARK: enable
@@ -113,7 +119,7 @@ enum Tools {
                                shortcutUUID: nil, enabledAt: Date(), allowRisky: allowRisky,
                                staleUUIDs: before.isEmpty ? nil : before.map(\.uuid))
         let opened = Shell.run("/usr/bin/open", [signed.path], timeout: 20)
-        if opened?.status != 0, previous?.shortcutUUID != nil {
+        if opened?.status != 0, previous?.shortcutUUID != nil, previous?.version == version, previous?.actionID == actionID {
             // Keep the working record (and its schema); the user can retry when `open` works.
             print("\(alias): couldn't open the new wrapper in Shortcuts; the current one stays in use. Run `intents-mcp enable \(enableKey(alias))` again later.")
             return .pending
@@ -178,7 +184,7 @@ enum Tools {
             for t in removed {
                 try? FileManager.default.removeItem(at: store.wrappersDir.appendingPathComponent("\(t.alias).v\(t.version)"))
                 print("\(t.alias): disabled. Agents can no longer call it.")
-                printCopies(t.shortcutName, library: library)
+                printCopies(t.shortcutName, uuid: t.shortcutUUID, library: library)
             }
         }
         // Retire read-back helpers that no remaining tool uses.
@@ -191,20 +197,29 @@ enum Tools {
             _ = try store.remove(h.alias)
             try? FileManager.default.removeItem(at: store.wrappersDir.appendingPathComponent("\(h.alias).v\(h.version)"))
             print("\(h.alias): no enabled tool uses this read-back helper any more; removed it too.")
-            printCopies(h.shortcutName, library: library)
+            printCopies(h.shortcutName, uuid: h.shortcutUUID, library: library)
         }
         if !unknown.isEmpty {
             throw CLIError.failure("no enabled tool matches \(unknown.map { "\"\($0)\"" }.joined(separator: ", ")); see `intents-mcp tools`")
         }
     }
 
-    static func printCopies(_ name: String, library: [Library.Entry]?) {
-        let copies = library.map { Library.matching(name, in: $0) } ?? []
-        if copies.isEmpty {
-            print("  Also delete \"\(name)\" in the Shortcuts app if it is there (the CLI can't delete shortcuts).")
-        } else {
-            let list = copies.map { "\"\($0.name)\"" }.joined(separator: ", ")
-            print("  Also delete \(list) in the Shortcuts app (the CLI can't delete shortcuts), except a copy that intents-mcp on another Mac with your iCloud account still uses.")
+    static func printCopies(_ name: String, uuid: String?, library: [Library.Entry]?) {
+        let caveat = "(the CLI can't delete shortcuts; keep any copy that intents-mcp on another Mac with your iCloud account still uses)"
+        guard let library else {
+            print("  Also delete \"\(name)\" in the Shortcuts app if it is there \(caveat).")
+            return
+        }
+        // This Mac's copy by UUID, even if the user renamed it; then other same-named copies.
+        if let mine = library.first(where: { $0.uuid == uuid }) {
+            print("  Delete this Mac's copy \"\(mine.name)\" in the Shortcuts app \(caveat).")
+        }
+        let others = Library.matching(name, in: library).filter { $0.uuid != uuid }
+        if !others.isEmpty {
+            print("  Other copies with this name: \(others.map { "\"\($0.name)\"" }.joined(separator: ", ")) \(caveat).")
+        }
+        if uuid.map({ u in !library.contains { $0.uuid == u } }) ?? true, others.isEmpty {
+            print("  No copy was found in Shortcuts.")
         }
     }
 

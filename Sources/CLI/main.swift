@@ -186,7 +186,7 @@ func callCommand(_ args: Args) async throws -> Int32 {
         callArgs = o
     }
     let timeout = try args.positive("timeout", default: 30)
-    guard timeout >= 20 else { throw CLIError.usage("--timeout must be at least 20 seconds (a cold run plus read-back needs about 15)") }
+    guard (20...600).contains(timeout) else { throw CLIError.usage("--timeout must be 20 to 600 seconds") }
     installSignalHandlers()
     let report = await Tools.call(alias, args: callArgs, caller: "cli", timeout: timeout, verify: !args.flags.contains("no-verify"))
     // If a signal handler already took over (Ctrl-C), let it finish and exit; don't race it.
@@ -201,9 +201,11 @@ func toolsCommand(_ args: Args) throws {
     if tools.isEmpty { print("No tools enabled. Try `intents-mcp enable reminders.add`."); return }
     for t in tools {
         let kind = t.source == "helper" ? "read-back helper (not an agent tool)" : t.source
-        let key = Tools.enableKey(t.alias)
+        let key = Tools.enableKey(t.alias, actionID: t.actionID)
         var state = t.shortcutUUID == nil ? "pending (click Add Shortcut, then run `intents-mcp enable \(key)`)" : "ready"
-        if let k = ReadBackWrappers.kind(forAlias: t.alias), t.version != ReadBackWrappers.version(k) {
+        if t.source == "helper", !Tools.helperInUse(t.alias, among: tools) {
+            state = "unused: run `intents-mcp disable \(t.alias)` and delete its shortcut"
+        } else if let k = ReadBackWrappers.kind(forAlias: t.alias), t.version != ReadBackWrappers.version(k) {
             state = "outdated: run `intents-mcp enable \(key)`"
         } else if t.source != "helper" {
             switch Result(catching: { try Tools.service.recipe(for: t) }) {
@@ -229,6 +231,9 @@ func logCommand(_ args: Args) throws {
         return x
     }
     entries = Array(entries.suffix(try args.positive("last", default: 50)))
+    if FileManager.default.fileExists(atPath: Tools.store.logFile.path), !FileManager.default.isWritableFile(atPath: Tools.store.logFile.path) {
+        FileHandle.standardError.write(Data("warning: \(Tools.store.logFile.path) is not writable: new calls are not being logged\n".utf8))
+    }
     if args.flags.contains("json") { return printJSON(entries) }
     let f = ISO8601DateFormatter()
     for e in entries {
@@ -331,7 +336,7 @@ do {
     case "serve":
         // stdout is the JSON-RPC channel: nothing else may be printed there.
         let timeout = try args.positive("timeout", default: 50)
-        guard timeout >= 20 else { throw CLIError.usage("--timeout must be at least 20 seconds (a cold run plus read-back needs about 15)") }
+        guard (20...600).contains(timeout) else { throw CLIError.usage("--timeout must be 20 to 600 seconds") }
         try requireMacOS26()
         installSignalHandlers()
         await Tools.service.adoptPendingAll()

@@ -163,7 +163,8 @@ public enum Runner {
         if res.timedOut { throw CallError.timeout(timeout) }
         guard res.status == 0 else {
             // Decide "not added" from the library, not from the (localized) error text.
-            if let entries = await Library.entries(timeout: 5), !entries.contains(where: { $0.uuid == uuid }) {
+            if cancel?.isCancelled != true, let entries = await Library.entries(timeout: TimeInterval(min(5, max(1, timeout)))),
+               !entries.contains(where: { $0.uuid == uuid }) {
                 throw CallError.notAdded(alias)
             }
             let msg = res.stderr.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "Error: ", with: "")

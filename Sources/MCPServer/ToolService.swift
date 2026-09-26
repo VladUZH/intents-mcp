@@ -20,6 +20,8 @@ public enum ToolError: Error, CustomStringConvertible {
             return "\(a) can't be a tool: \(why.joined(separator: "; "))"
         case .risky(let a, let why):
             return "\(a) looks risky (\(why.joined(separator: ", "))); enable it with --allow-risky if you are sure"
+        case .notEnabled(let a) where ReadBackWrappers.aliases.contains(a):
+            return "\(a) is a read-back helper, not a tool agents can call"
         case .notEnabled(let a): return "\(a) is not enabled; run `intents-mcp enable \(a)` first"
         case .pending(let a, let copies) where copies > 1:
             return "\(a) is waiting for its shortcut, and Shortcuts has \(copies) copies with its name; delete the ones you don't use (keep any that intents-mcp on another Mac with your iCloud account uses), then run `intents-mcp enable \(a)`"
@@ -165,7 +167,7 @@ public struct ToolService: ToolProvider {
             logName = tool.alias
             report.tool = tool.alias
             let r = try recipe(for: tool)
-            if tool.version != r.version { throw ToolError.outdated(tool.alias) }
+            if tool.version != r.version { throw ToolError.outdated(tool.actionID ?? tool.alias) }
             var helper = r.readBack.flatMap { k in all.first { $0.alias == ReadBackWrappers.alias(k) } }
             var helperNote: String?
             if let k = r.readBack, let h = helper, h.version != ReadBackWrappers.version(k) {
@@ -196,7 +198,8 @@ public struct ToolService: ToolProvider {
             let uuid = tool.shortcutUUID!
             let helperID = helperUUID
             let note = helperNote
-            let minRun = r.readBack != nil && verify ? 15 : 5
+            // A started wrapper always gets at least ~8 s (a cold run takes ~6 s), plus the read-back reserve.
+            let minRun = r.readBack != nil && verify ? 20 : 8
             let budget = timeout
             let work: @Sendable () async -> Outcome = {
                 func left() -> Int { max(0, Int(deadline.timeIntervalSinceNow.rounded(.down))) }

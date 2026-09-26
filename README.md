@@ -107,7 +107,9 @@ Codex) may need a restart.
   and whether it was verified, written when the call starts and when it ends, so an
   interrupted call still shows up. Arguments and results are not logged.
 - **Results are read back** where a read action exists: the helper finds the item with the
-  title just used and checks that it was created during the call. An older item with the
+  title just used and checks that it was created during the call. (If the app running your
+  agent already has full Reminders or Calendar access, this is done with EventKit instead;
+  see [PRIVACY.md](PRIVACY.md).) An older item with the
   same title, or a different item, reports `verified: false`, never a false success.
 - **Unclear outcomes are said.** If a run times out or ends without a result, the tool
   says the action may still have happened (`outcomeUnknown`), so agents check before

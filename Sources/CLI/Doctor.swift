@@ -78,7 +78,7 @@ enum Doctor {
         for t in tools {
             let copies = Library.matching(t.shortcutName, in: library)
             // Helpers are installed by the tool that uses them, not by their own alias.
-            let enableKey = ReadBackWrappers.kind(forAlias: t.alias).map(ReadBackWrappers.owner) ?? t.alias
+            let enableKey = Tools.enableKey(t.alias, actionID: t.actionID)
             let present = t.shortcutUUID.map { u in library.contains { $0.uuid == u } } ?? false
             var status = present ? "ok" : "warn"
             var detail = present ? "\(t.shortcutName) in Shortcuts"
@@ -89,7 +89,7 @@ enum Doctor {
                     let r = try Tools.service.recipe(for: t)
                     if r.version != t.version {
                         status = "warn"
-                        detail = "its wrapper is from an older intents-mcp: run `intents-mcp enable \(t.alias)` to update it"
+                        detail = "its wrapper is from an older intents-mcp: run `intents-mcp enable \(enableKey)` to update it"
                     }
                 } catch {
                     status = "warn"

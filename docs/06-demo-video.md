@@ -22,7 +22,7 @@ event in Codex, and the log.
 | Time | Screen | Caption (burned in, ≤ 7 words) |
 |---|---|---|
 | 0–3 s | Terminal: `intents-mcp census`. Cut the ~10 s scan; land on "This Mac declares **1,304** App Intents actions". Zoom on the number. | **Your Mac ships 1,304 app actions.** |
-| 3–8 s | `intents-mcp enable reminders.add calendar.create-event` → the Shortcuts "Add Shortcut" sheet → click (cut the repeat clicks: each tool plus its read-back helper). | **You pick each tool. A click to add it.** |
+| 3–8 s | `intents-mcp enable reminders.add calendar.create-event` → the Shortcuts "Add Shortcut" sheet → click (cut the repeat clicks: each tool plus its read-back helper). | **You pick each tool, then add it in Shortcuts.** |
 | 8–10 s | `claude mcp add --scope user mac -- intents-mcp serve` (pasted). | **Public APIs only. No SIP changes.** |
 | 10–21 s | **Split screen:** Claude Code on the left, Reminders on the right. Type *"Add a reminder to call the dentist tomorrow at 10"*. The tool call runs; "Call the dentist, Tomorrow 10:00" appears on the right; Claude's reply ends with "…verified". | **Claude uses the app's own action…** then **…and reads the result back.** |
 | 21–29 s | Codex on the left, Calendar on the right: *"Put 'Demo review' on my calendar tomorrow 14:00–14:30"* → the event appears. | **Codex too.** |

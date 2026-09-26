@@ -11,7 +11,7 @@ numeric order, then `docs/tech-notes.md` (§0, §8 and §9 change the build) and
 apps and system frameworks expose (1,269 actions on the Mac checked, 942 usable in
 Shortcuts), lets the user choose which ones an
 agent may use, wraps each chosen action in a signed Shortcut (the public route; the user
-clicks "Add Shortcut" once per action), and serves them as MCP tools over stdio to
+clicks "Add Shortcut" once per action, plus once for a read-back helper), and serves them as MCP tools over stdio to
 Claude Code, Codex, Claude Desktop or any MCP client. It runs on the user's Mac.
 The goal is **popularity** (GitHub stars, Homebrew installs), not revenue.
 

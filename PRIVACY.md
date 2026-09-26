@@ -13,7 +13,7 @@ intents-mcp runs on your Mac. It has no servers, accounts, analytics or telemetr
   access to Reminders or Calendar: the same check is done with Apple's EventKit instead. That
   loads your reminders (completed ones included) or your events from a year back to 11 years
   ahead into the intents-mcp process, keeps only items with the title just used, and returns
-  only their due or start time. intents-mcp never asks for this access itself.
+  only their due time or start and end time. intents-mcp never asks for this access itself.
 
 **What it stores**, in `~/Library/Application Support/intents-mcp` (or `$INTENTS_MCP_HOME`):
 - the tools you enabled (`tools.json`);

@@ -433,6 +433,30 @@ M0: **GO**, signed off by the human 2026-09-25.
     974 discoverable, 47 simple, 671 entity, 109 risky**; scan ≈ 11 s.
   - `swift test` → 58 tests in 13 suites passed, incl. a regression test that runs more
     concurrent calls than CPUs (real child processes) plus a ping.
+- 2026-09-26 — **Fix verification, 3 rounds** (Workflows wf_ccbd477e-c57, wf_fa70271d-41c,
+  wf_0ad29f53-2e9: every finding re-checked against the code by batch reviewers, plus
+  regression lenses with 2 skeptics each):
+  - Round 1: 66/94 fixed, 28 partial, 25 regressions (8 medium: old helpers after upgrade;
+    gated calls starting with 1 s left, even when cancelled; read-back window opening before the
+    gate; signed-file deletion claims; order-dependent tool names).
+  - Round 2 (after fixes): 26 fixed, 6 accepted, 21 open, 15 new (4 medium: head-of-line
+    blocking at the gate, 5 s creation slack, open-failure recovery, name reuse after a swap).
+  - Round 3 (after fixes): 22 of 36 fixed, 14 low partials, 4 new low. Then fixed: process-group
+    signals and a ≤0.35 s stopAll (beats Claude Code's SIGKILL at 0.5 s), atomic shutdown vs
+    spawn, `--timeout` 20–600, minRun 20 s for read-back tools, `disable` names this Mac's copy
+    by UUID (even renamed), unused helpers → "disable", upgrade hints by action id, `log`
+    warns when log.jsonl isn't writable, last wording.
+  - Accepted limitations (documented): request ids > 2^53; bundles nested inside Resources not
+    scanned (+40% scan time, none found); `list --json` has metadata actions only; a run that
+    completes after its call returned isn't reconciled; iCloud copies from another Mac aren't
+    auto-detected (wording only); partial output lost when a grandchild holds the pipe
+    (flagged `incomplete`); whether SIGINT cancels a pending Shortcuts run is unverified.
+  - Final census (macOS 27.0): **1,304 declared (1,249 unique), 224 files, 91 apps, 945
+    discoverable and available, 47 simple, 657 entity, 134 risky**; scan ≈ 10.7 s.
+  - `swift test` → 62 tests in 15 suites passed. Real binary: `tools`/`doctor` flag this Mac's
+    old helpers ("outdated: run `intents-mcp enable reminders.add`").
+  - **Not yet verified live (GATE):** the new read-back helpers (reminders v3, events v2: title
+    filter + Format Date ISO 8601 creation date). Needs re-import + one call each.
 
 ## Decisions
 
@@ -498,6 +522,10 @@ M0: **GO**, signed off by the human 2026-09-25.
   checkout, so a feature branch there silently disables the bottle.
 
 ## Human steps waiting (GATE)
+- 2026-09-26 — **Live check of the new read-back helpers** before releasing 0.1.3: `intents-mcp
+  enable reminders.add calendar.create-event` (2× Add Shortcut for the new helpers; Always
+  Allow if asked), then one reminder and one event call must come back "verified". Also
+  delete the old "intents-mcp verify.reminders"/"verify.calendar" copies afterwards.
 - 2026-09-25 — **M4 GATEs:** ~~public repo~~, ~~tap repo~~, ~~v0.1.0 release~~, ~~MCP Registry~~ done;
   clean-Mac/fresh-user install test (the M4 acceptance); Developer ID + notarization deferred by
   the human (MCPB/Claude Desktop only); ~~bottling~~ done (arm64_tahoe); MCP Registry

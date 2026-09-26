@@ -50,6 +50,8 @@ public enum Shell {
         do { try p.run() } catch { return nil }
         running.insert(p)
         defer { running.remove(p) }
+        // A shutdown that began while this child was being spawned missed it: stop it now.
+        if isShuttingDown { signalGroup(p, SIGKILL) }
 
         // Read both pipes while the child runs, each on its own thread, so a full pipe can't block it.
         let outData = LockedData(), errData = LockedData()
@@ -89,26 +91,39 @@ public enum Shell {
 
     /// SIGINT first (the polite stop for a CLI; whether `shortcuts` also cancels a run that is
     /// waiting for a permission dialog is not verified), then SIGTERM, then SIGKILL.
+    /// Signals go to the child's whole process group (Process gives each child its own), so a
+    /// grandchild holding the output pipes is stopped too.
     static func stop(_ p: Process, _ exited: DispatchSemaphore) {
         guard p.isRunning else { return }
-        p.interrupt()
+        signalGroup(p, SIGINT)
         if exited.wait(timeout: .now() + 1) == .success { return }
-        p.terminate()
+        signalGroup(p, SIGTERM)
         if exited.wait(timeout: .now() + 1) == .success { return }
-        kill(p.processIdentifier, SIGKILL)
+        signalGroup(p, SIGKILL)
         _ = exited.wait(timeout: .now() + 2)
     }
 
+    static func signalGroup(_ p: Process, _ sig: Int32) {
+        let pid = p.processIdentifier
+        guard pid > 0 else { return }
+        if killpg(pid, sig) != 0 { kill(pid, sig) }
+    }
+
     /// Stops every running child (SIGINT, then SIGTERM). For signal handlers on shutdown.
+    /// Finishes within about 0.35 s (Claude Code sends SIGKILL 0.5 s after its first signal).
     public static func stopAll() {
         shutdown.cancel()
+        func waitGone(_ ps: [Process], _ seconds: Double) {
+            let until = Date().addingTimeInterval(seconds)
+            while ps.contains(where: \.isRunning), Date() < until { Thread.sleep(forTimeInterval: 0.02) }
+        }
         let ps = running.all().filter(\.isRunning)
-        guard !ps.isEmpty else { return }  // idle: exit at once (clients SIGKILL soon after SIGTERM)
-        for p in ps where p.isRunning { p.interrupt() }
-        Thread.sleep(forTimeInterval: 0.3)
-        for p in ps where p.isRunning { p.terminate() }
-        Thread.sleep(forTimeInterval: 0.3)
-        for p in ps where p.isRunning { kill(p.processIdentifier, SIGKILL) }
+        guard !ps.isEmpty else { return }  // idle: exit at once
+        for p in ps where p.isRunning { signalGroup(p, SIGINT) }
+        waitGone(ps, 0.15)
+        for p in ps where p.isRunning { signalGroup(p, SIGTERM) }
+        waitGone(ps, 0.15)
+        for p in ps where p.isRunning { signalGroup(p, SIGKILL) }
     }
 
     final class LockedData: @unchecked Sendable {
