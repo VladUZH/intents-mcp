@@ -12,49 +12,54 @@ enum Doctor {
         var detail: String
     }
 
-    static func checks() async -> [Check] {
+    /// `report` sees each check as soon as it is done, so the terminal shows progress line by line.
+    static func checks(_ report: (Check) -> Void = { _ in }) async -> [Check] {
         var out: [Check] = []
+        func add(_ c: Check) {
+            out.append(c)
+            report(c)
+        }
         let v = ProcessInfo.processInfo.operatingSystemVersion
         let vs = "\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
-        out.append(Check(name: "macOS", status: v.majorVersion >= 26 ? "ok" : "fail",
+        add(Check(name: "macOS", status: v.majorVersion >= 26 ? "ok" : "fail",
                          detail: v.majorVersion >= 27 ? "\(vs) (tested)" : v.majorVersion >= 26 ? "\(vs) (supported, not tested yet)" : "\(vs): needs macOS 26 or later"))
 
         let shortcuts = "/usr/bin/shortcuts"
         if let help = Shell.run(shortcuts, ["help"]) {
             let text = help.stdout + help.stderr
             let hasSign = text.contains("sign")
-            out.append(Check(name: "shortcuts CLI", status: hasSign ? "ok" : "fail",
+            add(Check(name: "shortcuts CLI", status: hasSign ? "ok" : "fail",
                              detail: hasSign ? "\(shortcuts) with run, list, sign" : "\(shortcuts) has no `sign` subcommand"))
         } else {
-            out.append(Check(name: "shortcuts CLI", status: "fail", detail: "\(shortcuts) not found"))
+            add(Check(name: "shortcuts CLI", status: "fail", detail: "\(shortcuts) not found"))
         }
         if let l = Shell.run(shortcuts, ["list"]) {
             if l.timedOut {
-                out.append(Check(name: "Shortcuts library", status: "fail", detail: "`shortcuts list` timed out"))
+                add(Check(name: "Shortcuts library", status: "fail", detail: "`shortcuts list` timed out"))
             } else {
                 let n = l.stdout.split(separator: "\n").count
-                out.append(Check(name: "Shortcuts library", status: l.status == 0 ? "ok" : "fail",
+                add(Check(name: "Shortcuts library", status: l.status == 0 ? "ok" : "fail",
                                  detail: l.status == 0 ? "\(n) shortcuts readable" : l.stderr.trimmingCharacters(in: .whitespacesAndNewlines)))
             }
         }
-        out.append(Check(name: "iCloud", status: "info",
+        add(Check(name: "iCloud", status: "info",
                          detail: "signing a shortcut needs an iCloud login, and Apple receives a copy for validation; checked when you first enable a tool"))
 
-        let files = ActionIndex.findMetadataFiles()
-        out.append(Check(name: "App Intents metadata", status: files.isEmpty ? "fail" : "ok",
+        let files = Progress.run("Looking for App Intents metadata (about 10 s)…") { ActionIndex.findMetadataFiles() }
+        add(Check(name: "App Intents metadata", status: files.isEmpty ? "fail" : "ok",
                          detail: "\(files.count) metadata files (run `intents-mcp census`)"))
 
         let store = Tools.store.root  // honours INTENTS_MCP_HOME
-        out.append(Check(name: "local store", status: "info",
+        add(Check(name: "local store", status: "info",
                          detail: FileManager.default.fileExists(atPath: store.path) ? store.path : "\(store.path) (created on first enable)"))
         // The call log must be writable, or calls would run unlogged.
         let logDir = Tools.store.root.path
         if FileManager.default.fileExists(atPath: Tools.store.logFile.path) {
             let ok = FileManager.default.isWritableFile(atPath: Tools.store.logFile.path)
-            out.append(Check(name: "call log", status: ok ? "ok" : "fail",
+            add(Check(name: "call log", status: ok ? "ok" : "fail",
                              detail: ok ? Tools.store.logFile.path : "\(Tools.store.logFile.path) is not writable: calls can't be logged"))
         } else if FileManager.default.fileExists(atPath: logDir), !FileManager.default.isWritableFile(atPath: logDir) {
-            out.append(Check(name: "call log", status: "fail", detail: "\(logDir) is not writable: calls can't be logged"))
+            add(Check(name: "call log", status: "fail", detail: "\(logDir) is not writable: calls can't be logged"))
         }
         await Tools.service.adoptPendingAll()
         Tools.store.removeSignedWrappersOfAddedTools()
@@ -62,16 +67,16 @@ enum Doctor {
         do {
             tools = try Tools.store.tools()
         } catch {
-            out.append(Check(name: "tools.json", status: "fail",
+            add(Check(name: "tools.json", status: "fail",
                              detail: "can't be read (\(error)); `serve` exposes no tools until it is fixed or removed"))
             return out
         }
         if tools.isEmpty {
-            out.append(Check(name: "tools enabled", status: "info", detail: "none yet (`intents-mcp enable reminders.add`)"))
+            add(Check(name: "tools enabled", status: "info", detail: "none yet (`intents-mcp enable reminders.add`)"))
             return out
         }
         guard let library = await Library.entries() else {
-            out.append(Check(name: "tools enabled", status: "warn",
+            add(Check(name: "tools enabled", status: "warn",
                              detail: "\(tools.count) enabled, but the Shortcuts library couldn't be read to check them"))
             return out
         }
@@ -112,20 +117,23 @@ enum Doctor {
                 detail += "; other copies: " + extra.map { "\"\($0.name)\"" }.joined(separator: ", ")
                     + " (delete them unless intents-mcp on another Mac with your iCloud account uses them)"
             }
-            out.append(Check(name: "tool \(t.alias)", status: status, detail: detail))
+            add(Check(name: "tool \(t.alias)", status: status, detail: detail))
         }
         return out
     }
 
     static func run(json: Bool) async -> Int32 {
-        let cs = await checks()
+        let cs: [Check]
         if json {
+            cs = await checks()
             printJSON(cs)
         } else {
-            let width = cs.map(\.name.count).max() ?? 22
-            for c in cs {
+            // Each line prints as its check finishes; the name column is sized up front.
+            let names = ((try? Tools.store.tools()) ?? []).map { "tool \($0.alias)" } + ["App Intents metadata"]
+            let width = names.map(\.count).max()!
+            cs = await checks { c in
                 let mark = ["ok": "✓", "warn": "!", "fail": "✗", "info": "·"][c.status] ?? "?"
-                print("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(c.detail)")
+                Out.line("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(c.detail)")
             }
         }
         return cs.contains { $0.status == "fail" } ? 1 : 0

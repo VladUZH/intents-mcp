@@ -21,7 +21,7 @@ event in Codex, and the log.
 
 | Time | Screen | Caption (burned in, ≤ 7 words) |
 |---|---|---|
-| 0–3 s | Terminal: `intents-mcp census`. Cut the ~10 s scan; land on "This Mac declares **1,304** App Intents actions". Zoom on the number. | **Your Mac ships 1,304 app actions.** |
+| 0–3 s | Terminal: `intents-mcp census`. Cut the ~10 s scan; the output then appears line by line, headline first: "This Mac declares **1,304** App Intents actions". Zoom on the number. | **Your Mac ships 1,304 app actions.** |
 | 3–8 s | `intents-mcp enable reminders.add calendar.create-event` → the Shortcuts "Add Shortcut" sheet → click (cut the repeat clicks: each tool plus its read-back helper). | **You pick each tool, then add it in Shortcuts.** |
 | 8–10 s | `claude mcp add --scope user mac -- intents-mcp serve` (pasted). | **Public APIs only. No SIP changes.** |
 | 10–21 s | **Split screen:** Claude Code on the left, Reminders on the right. Type *"Add a reminder to call the dentist tomorrow at 10"*. The tool call runs; "Call the dentist, Tomorrow 10:00" appears on the right; Claude's reply ends with "…verified". | **Claude uses the app's own action…** then **…and reads the result back.** |
@@ -50,6 +50,11 @@ to "verified". No end card: the README already has the install line.
   very quiet.
 - **Tools:** macOS's ⌘⇧5 screen recording is enough. Screen Studio (paid) adds automatic zooms.
   Cut in iMovie or CapCut. Make the GIF with `ffmpeg` (palettegen) or Gifski.
+- **Line-by-line output:** in a terminal, `census`, `list`, `doctor`, `tools`, `log`, `enable`
+  and `disable` print one line at a time (40 ms apart by default). For the recording, set a slower
+  gap on the commands you film, e.g. `INTENTS_MCP_LINE_DELAY_MS=120 intents-mcp census` (80–150,
+  to taste): the census lands line by line, headline first. An `export` works too, but then every
+  command is slower (up to 10 s extra). Try it once and check the take reads well at phone size.
 - **Before recording:** `brew upgrade intents-mcp`, `intents-mcp doctor` all ✓, both tools
   enabled (the Codex beat needs `calendar.create-event`), and test the exact prompts once so
   the takes are clean.

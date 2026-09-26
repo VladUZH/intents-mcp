@@ -75,7 +75,7 @@ enum Tools {
             }
         }
         if !dryRun {
-            print("Claude Code picks up the change in a running session; other clients (e.g. Codex) may need a restart.")
+            Out.line("Claude Code picks up the change in a running session; other clients (e.g. Codex) may need a restart.")
         }
         return allDone
     }
@@ -86,7 +86,7 @@ enum Tools {
         let signed = try store.wrapperURL(alias: alias, version: version, signed: true)
         if dryRun {
             try data.write(to: unsigned)
-            print("\(alias): dry run: unsigned wrapper at \(unsigned.path); not signed, not opened, not enabled")
+            Out.line("\(alias): dry run: unsigned wrapper at \(unsigned.path); not signed, not opened, not enabled")
             return .dryRun
         }
         guard let library = await Library.entries() else {
@@ -99,7 +99,7 @@ enum Tools {
             // By UUID, not name: a shortcut the user renamed is still the same wrapper.
             if let uuid = existing.shortcutUUID, library.contains(where: { $0.uuid == uuid }) {
                 store.removeSignedWrapper(alias: alias, version: version)
-                print("\(alias): already enabled (\(shortcutName))")
+                Out.line("\(alias): already enabled (\(shortcutName))")
                 return .alreadyEnabled
             }
             // Pending, and the user has since added exactly one new copy: adopt it instead of importing another.
@@ -107,12 +107,12 @@ enum Tools {
             if existing.shortcutUUID == nil, fresh.count == 1 {
                 try store.update(alias) { $0.shortcutUUID = fresh[0].uuid }
                 store.removeSignedWrapper(alias: alias, version: version)
-                print("\(alias): enabled (\(fresh[0].uuid)).")
+                Out.line("\(alias): enabled (\(fresh[0].uuid)).")
                 return .enabled
             }
         }
         try data.write(to: unsigned)
-        print("\(alias): signing the wrapper shortcut (uses your iCloud account; Apple receives a copy for validation)…")
+        Out.line("\(alias): signing the wrapper shortcut (uses your iCloud account; Apple receives a copy for validation)…")
         try Signer.sign(unsigned: unsigned, to: signed)
         let previous = try store.tools().first { $0.alias == alias }
         var tool = EnabledTool(alias: alias, source: source, actionID: actionID, version: version, shortcutName: shortcutName,
@@ -121,32 +121,32 @@ enum Tools {
         let opened = Shell.run("/usr/bin/open", [signed.path], timeout: 20)
         if opened?.status != 0, previous?.shortcutUUID != nil, previous?.version == version, previous?.actionID == actionID {
             // Keep the working record (and its schema); the user can retry when `open` works.
-            print("\(alias): couldn't open the new wrapper in Shortcuts; the current one stays in use. Run `intents-mcp enable \(enableKey(alias))` again later.")
+            Out.line("\(alias): couldn't open the new wrapper in Shortcuts; the current one stays in use. Run `intents-mcp enable \(enableKey(alias))` again later.")
             return .pending
         }
         // Only now, with the wrapper it describes about to be imported, record the action's schema.
         if let specData { try specData.write(to: specURL(alias, version)) }
         try store.upsert(tool)
         if opened?.status != 0 {
-            print("\(alias): couldn't open the wrapper in Shortcuts. Open this file yourself and click Add Shortcut; intents-mcp picks it up on the next `enable`, `doctor`, `serve` or call:\n  \(signed.path)")
+            Out.line("\(alias): couldn't open the wrapper in Shortcuts. Open this file yourself and click Add Shortcut; intents-mcp picks it up on the next `enable`, `doctor`, `serve` or call:\n  \(signed.path)")
             return .pending
         }
-        print("\(alias): Shortcuts is showing \"\(shortcutName)\". Click Add Shortcut.")
-        if let note { print("\(alias): note: \(note).") }
-        guard wait else { print("\(alias): pending (not waiting). After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` to finish."); return .pending }
+        Out.line("\(alias): Shortcuts is showing \"\(shortcutName)\". Click Add Shortcut.")
+        if let note { Out.line("\(alias): note: \(note).") }
+        guard wait else { Out.line("\(alias): pending (not waiting). After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` to finish."); return .pending }
         guard let uuid = await waitForImport(name: shortcutName, known: Set(before.map(\.uuid)), seconds: 180) else {
-            print("\(alias): no new shortcut seen after 3 minutes; it stays pending. After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` again to finish.")
+            Out.line("\(alias): no new shortcut seen after 3 minutes; it stays pending. After you click Add Shortcut, run `intents-mcp enable \(enableKey(alias))` again to finish.")
             return .pending
         }
         tool.shortcutUUID = uuid
         try store.upsert(tool)
         // The signed file carries your Apple Account's signing identity; it isn't needed after import.
         try? FileManager.default.removeItem(at: signed)
-        print("\(alias): enabled (\(uuid)). If Shortcuts asks for permission on the first run, choose Always Allow.")
+        Out.line("\(alias): enabled (\(uuid)). If Shortcuts asks for permission on the first run, choose Always Allow.")
         // Name stale copies by the names they have now (Replace renames the old one to "… 2").
         let now = await Library.entries().map { Library.matching(shortcutName, in: $0) } ?? []
         for s in now where s.uuid != uuid {
-            print("\(alias): another copy \"\(s.name)\" (\(s.uuid)) is in Shortcuts. Unless intents-mcp on another Mac with your iCloud account uses it, delete it there (the CLI can't delete shortcuts). Keep \"\(now.first { $0.uuid == uuid }?.name ?? shortcutName)\".")
+            Out.line("\(alias): another copy \"\(s.name)\" (\(s.uuid)) is in Shortcuts. Unless intents-mcp on another Mac with your iCloud account uses it, delete it there (the CLI can't delete shortcuts). Keep \"\(now.first { $0.uuid == uuid }?.name ?? shortcutName)\".")
         }
         return .enabled
     }
@@ -183,7 +183,7 @@ enum Tools {
             guard !removed.isEmpty else { unknown.append(key); continue }
             for t in removed {
                 try? FileManager.default.removeItem(at: store.wrappersDir.appendingPathComponent("\(t.alias).v\(t.version)"))
-                print("\(t.alias): disabled. Agents can no longer call it.")
+                Out.line("\(t.alias): disabled. Agents can no longer call it.")
                 printCopies(t.shortcutName, uuid: t.shortcutUUID, library: library)
             }
         }
@@ -196,7 +196,7 @@ enum Tools {
         for h in remaining where h.source == "helper" && !needed.contains(h.alias) {
             _ = try store.remove(h.alias)
             try? FileManager.default.removeItem(at: store.wrappersDir.appendingPathComponent("\(h.alias).v\(h.version)"))
-            print("\(h.alias): no enabled tool uses this read-back helper any more; removed it too.")
+            Out.line("\(h.alias): no enabled tool uses this read-back helper any more; removed it too.")
             printCopies(h.shortcutName, uuid: h.shortcutUUID, library: library)
         }
         if !unknown.isEmpty {
@@ -207,19 +207,19 @@ enum Tools {
     static func printCopies(_ name: String, uuid: String?, library: [Library.Entry]?) {
         let caveat = "(the CLI can't delete shortcuts; keep any copy that intents-mcp on another Mac with your iCloud account still uses)"
         guard let library else {
-            print("  Also delete \"\(name)\" in the Shortcuts app if it is there \(caveat).")
+            Out.line("  Also delete \"\(name)\" in the Shortcuts app if it is there \(caveat).")
             return
         }
         // This Mac's copy by UUID, even if the user renamed it; then other same-named copies.
         if let mine = library.first(where: { $0.uuid == uuid }) {
-            print("  Delete this Mac's copy \"\(mine.name)\" in the Shortcuts app \(caveat).")
+            Out.line("  Delete this Mac's copy \"\(mine.name)\" in the Shortcuts app \(caveat).")
         }
         let others = Library.matching(name, in: library).filter { $0.uuid != uuid }
         if !others.isEmpty {
-            print("  Other copies with this name: \(others.map { "\"\($0.name)\"" }.joined(separator: ", ")) \(caveat).")
+            Out.line("  Other copies with this name: \(others.map { "\"\($0.name)\"" }.joined(separator: ", ")) \(caveat).")
         }
         if uuid.map({ u in !library.contains { $0.uuid == u } }) ?? true, others.isEmpty {
-            print("  No copy was found in Shortcuts.")
+            Out.line("  No copy was found in Shortcuts.")
         }
     }
 

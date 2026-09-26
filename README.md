@@ -5,11 +5,12 @@ Claude Code, Codex or any MCP client, through Shortcuts, using public APIs only.
 
 ```
 $ intents-mcp census
-This Mac declares 1,304 App Intents actions (1,249 unique) in 224 metadata files,
-across 91 apps and system components.
-  discoverable in Shortcuts          945
-  simple tier                        47   background, plain inputs, returns output
-  need an entity (a note, a list…)   657   not supported yet
+This Mac declares 1,304 App Intents actions (1,249 unique)
+in 224 metadata files, across 91 apps and system components.
+
+  discoverable in Shortcuts  945
+  simple tier                 47  background, plain inputs, returns output
+  need an entity (a note…)   657  not supported yet
   …
 ```
 
@@ -131,6 +132,12 @@ intents-mcp log [--last <n>]                  what agents called
 intents-mcp doctor                            check this Mac is ready
 intents-mcp serve                             MCP over stdio
 ```
+
+In a terminal, the text output of `census`, `list`, `doctor`, `tools`, `log`, `enable` and
+`disable` appears one line at a time: about 40 ms apart, adding at most 2 s to a command. Output
+over 300 lines (such as a full `list`), pipes, files and `--json` print at once.
+`INTENTS_MCP_LINE_DELAY_MS` sets the gap in milliseconds: `0` turns it off, and a larger value
+such as `120` is slower, for a screen recording (it may then add up to 10 s to a command).
 
 ## Limits
 

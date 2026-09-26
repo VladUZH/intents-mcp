@@ -149,30 +149,43 @@ func census(_ args: Args) {
     let c = Census(index)
     if args.flags.contains("json") { return printJSON(c) }
     let t = c.byTier
-    print("""
-        This Mac declares \(grouped(c.declaredActions)) App Intents actions (\(grouped(c.uniqueActions)) unique) \
-        in \(c.metadataFiles) metadata files, across \(c.apps) apps and system components.
-
-          discoverable in Shortcuts          \(grouped(c.discoverable))
-          simple tier                        \(grouped(t["simple"] ?? 0))   background, plain inputs, returns output
-          need an entity (a note, a list…)   \(grouped(t["entity"] ?? 0))   not supported yet
-          other                              \(grouped(t["unsupported"] ?? 0))   hidden, opens the app, no output, files…
-          flagged risky                      \(grouped(c.risky))   delete / send / buy / share; off unless allowed
-
-          third-party apps: \(c.thirdParty.apps) apps, \(c.thirdParty.actions) actions \
-        (\(c.thirdParty.discoverable) discoverable, \(c.thirdParty.simple) simple)
-
-        Most actions:
-        """)
-    for a in c.topApps {
-        print("  \(a.app.padding(toLength: 34, withPad: " ", startingAt: 0)) \(String(a.actions).leftPad(4))   simple \(a.simple)")
+    // Fits an 80-column terminal, so no line breaks mid-word as it appears line by line.
+    let rows = [
+        ("discoverable in Shortcuts", c.discoverable, ""),
+        ("simple tier", t["simple"] ?? 0, "background, plain inputs, returns output"),
+        ("need an entity (a note…)", t["entity"] ?? 0, "not supported yet"),
+        ("other", t["unsupported"] ?? 0, "hidden, opens the app, no output, files…"),
+        ("flagged risky", c.risky, "delete, send, buy, share; off unless allowed"),
+    ]
+    let labelWidth = rows.map(\.0.count).max()! + 2
+    let numberWidth = rows.map { grouped($0.1).count }.max()!
+    var lines = [
+        "This Mac declares \(grouped(c.declaredActions)) App Intents actions (\(grouped(c.uniqueActions)) unique)",
+        "in \(c.metadataFiles) metadata files, across \(c.apps) apps and system components.",
+        "",
+    ]
+    lines += rows.map { label, n, note in
+        "  \(label.padding(toLength: labelWidth, withPad: " ", startingAt: 0))\(grouped(n).leftPad(numberWidth))"
+            + (note.isEmpty ? "" : "  \(note)")
     }
-    print("""
-
-        These counts come from the metadata apps ship. Declared is not the same as usable: some \
-        declared actions are refused by Shortcuts on the Mac, and Reminders and Calendar work \
-        through built-in Shortcuts actions that are not counted here.
-        """)
+    lines += [
+        "",
+        "  third-party apps: \(c.thirdParty.apps) apps, \(c.thirdParty.actions) actions "
+            + "(\(c.thirdParty.discoverable) discoverable, \(c.thirdParty.simple) simple)",
+        "",
+        "Most actions:",
+    ]
+    lines += c.topApps.map { a in
+        "  \(a.app.padding(toLength: 34, withPad: " ", startingAt: 0)) \(String(a.actions).leftPad(4))   simple \(a.simple)"
+    }
+    lines += [
+        "",
+        "These counts come from the metadata apps ship. Declared is not the same as",
+        "usable: some declared actions are refused by Shortcuts on the Mac, and",
+        "Reminders and Calendar work through built-in Shortcuts actions that are not",
+        "counted here.",
+    ]
+    Out.block(lines)
     for e in index.errors { FileHandle.standardError.write(Data("warning: \(e)\n".utf8)) }
 }
 
@@ -198,7 +211,8 @@ func callCommand(_ args: Args) async throws -> Int32 {
 func toolsCommand(_ args: Args) throws {
     let tools = try Tools.store.tools()
     if args.flags.contains("json") { return printJSON(tools) }
-    if tools.isEmpty { print("No tools enabled. Try `intents-mcp enable reminders.add`."); return }
+    if tools.isEmpty { Out.line("No tools enabled. Try `intents-mcp enable reminders.add`."); return }
+    var lines: [String] = []
     for t in tools {
         let kind = t.source == "helper" ? "read-back helper (not an agent tool)" : t.source
         let key = Tools.enableKey(t.alias, actionID: t.actionID)
@@ -214,8 +228,9 @@ func toolsCommand(_ args: Args) throws {
             default: break
             }
         }
-        print("\(t.alias)  \(state)  \(kind)\(t.allowRisky ? "  risky allowed" : "")")
+        lines.append("\(t.alias)  \(state)  \(kind)\(t.allowRisky ? "  risky allowed" : "")")
     }
+    Out.block(lines)
 }
 
 func logCommand(_ args: Args) throws {
@@ -236,14 +251,16 @@ func logCommand(_ args: Args) throws {
     }
     if args.flags.contains("json") { return printJSON(entries) }
     let f = ISO8601DateFormatter()
+    var lines: [String] = []
     for e in entries {
         let v = e.verified.map { $0 ? "verified" : "NOT verified" } ?? "unverified"
         if e.event == "start" {
-            print("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.error ?? "")  \(e.caller)")
+            lines.append("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.error ?? "")  \(e.caller)")
             continue
         }
-        print("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
+        lines.append("\(f.string(from: e.time))  \(e.tool.padding(toLength: max(24, e.tool.count), withPad: " ", startingAt: 0)) \(e.ok ? "ok   " : "error") \(String(e.durationMs).leftPad(6)) ms  \(v)\(e.error.map { "  (\($0))" } ?? "")  \(e.caller)")
     }
+    Out.block(lines)
 }
 
 func list(_ args: Args) throws {
@@ -264,6 +281,7 @@ func list(_ args: Args) throws {
         else if let how = Catalog.checkedGenerated[xs[i].id] { xs[i].status = "checked: \(how)" }
     }
     if args.flags.contains("json") { return printJSON(xs) }
+    var lines: [String] = []
     // Checked tools first: they are known to work (Reminders and Calendar are built-in Shortcuts
     // actions, so they are not in the metadata list below).
     let checked = Catalog.all.filter { r in
@@ -272,36 +290,37 @@ func list(_ args: Args) throws {
     }
     let checkedGenerated = xs.filter { Catalog.checkedGenerated[$0.id] != nil }
     if tier == "all" || tier == "simple", !(checked.isEmpty && checkedGenerated.isEmpty) {
-        print("Checked on a real run (recommended):")
+        lines.append("Checked on a real run (recommended):")
         for r in checked {
             let params = r.exposedInputs.map { "\($0.name)\($0.required ? "" : "?")" }.joined(separator: ", ")
-            print("  \(r.alias)  \(r.title)(\(params))")
+            lines.append("  \(r.alias)  \(r.title)(\(params))")
         }
         for a in checkedGenerated {
-            print("  \(a.alias)  \(a.title)(\(a.parameters.filter { !$0.optional }.map(\.name).joined(separator: ", ")))")
+            lines.append("  \(a.alias)  \(a.title)(\(a.parameters.filter { !$0.optional }.map(\.name).joined(separator: ", ")))")
         }
-        print("\nFrom app metadata (not yet checked; try one with `intents-mcp call` before relying on it):")
+        lines.append("\nFrom app metadata (not yet checked; try one with `intents-mcp call` before relying on it):")
     }
     for a in xs where Catalog.checkedGenerated[a.id] == nil {
         if let why = Catalog.knownBroken[a.id] {
-            print("\(a.alias)  (known not to work)")
-            print("    \(why)")
+            lines.append("\(a.alias)  (known not to work)")
+            lines.append("    \(why)")
             continue
         }
         let mark = a.risky ? " [risky]" : ""
         let params = a.parameters.map { "\($0.name)\($0.optional ? "?" : ""):\($0.kind.label)" }.joined(separator: ", ")
         let out = a.outputType.map { " -> \($0)" } ?? ""
-        print("\(a.alias)  (\(a.tier.rawValue))\(mark)")
-        print("    \(a.title)(\(params))\(out)")
-        if !a.tierReasons.isEmpty { print("    why not simple: \(a.tierReasons.joined(separator: "; "))") }
+        lines.append("\(a.alias)  (\(a.tier.rawValue))\(mark)")
+        lines.append("    \(a.title)(\(params))\(out)")
+        if !a.tierReasons.isEmpty { lines.append("    why not simple: \(a.tierReasons.joined(separator: "; "))") }
         if a.tier == .simple {
             if let why = Catalog.refusal(for: a) {
-                print("    can't be a tool yet: \(why)")
+                lines.append("    can't be a tool yet: \(why)")
             } else if a.parameters.contains(where: \.optional) {
-                print("    as a tool: only the required inputs are passed (optional ones aren't offered yet)")
+                lines.append("    as a tool: only the required inputs are passed (optional ones aren't offered yet)")
             }
         }
     }
+    Out.block(lines)
     FileHandle.standardError.write(Data("\(xs.count) actions\n".utf8))
 }
 

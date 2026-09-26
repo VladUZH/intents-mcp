@@ -480,9 +480,24 @@ M0: **GO**, signed off by the human 2026-09-25.
   - This Mac: `brew update` (local tap on main) → `brew upgrade intents-mcp` → 0.1.2 → 0.1.3,
     poured_from_bottle=true. `intents-mcp doctor` → all ✓ (exit 0); `shortcuts list` shows only
     the four current shortcuts (old helper copies deleted by the human).
+- 2026-09-26 — **Line-by-line CLI output** (human request, for the demo video and readability):
+  `census`, `list`, `doctor`, `tools`, `log`, `enable`, `disable` print one line at a time on a
+  terminal (Core `LinePacing` + CLI `Out`). `doctor` now streams each check as it finishes (it was
+  8.5 s of silence) with a spinner during the metadata search. `census` reflowed to fit 80
+  columns (headline on its own line). Checks, under a pty harness that timestamps lines:
+  census 32 lines ≈ 45 ms apart (1.4 s); `INTENTS_MCP_LINE_DELAY_MS=120` → ≈ 130 ms; `=0`,
+  `TERM=dumb` and pipes → at once; full `list` (3,712 lines) at once; `census --json`, `serve`
+  unchanged. `swift test` → 66 tests in 16 suites pass. Review workflow (4 lenses + verifiers):
+  4 low findings confirmed and fixed (env value with a newline, no cap on a set gap → 10 s
+  budget, README/demo-doc wording), concurrency lens clean. Scans ran 30–60 s during testing
+  because of unrelated machine load (the released 0.1.3 binary was equally slow).
 
 ## Decisions
 
+- 2026-09-26 — **Output pacing is on by default in a terminal**, off for pipes, files, `--json`,
+  `TERM=dumb` and `serve`. 40 ms between lines, at most 2 s added per command; a gap set with
+  `INTENTS_MCP_LINE_DELAY_MS` (0 = off) gets a 10 s budget; blocks over 300 lines print at once.
+  `--help`, `--version` and `call` (JSON) are not paced.
 - 2026-09-25 — **MCP: hand-written JSON-RPC over stdio, not swift-sdk 0.12.1.** Evidence
   above: SDK fails `initialize` with current Codex (#287); hand-written works with both
   clients. It echoes the client's protocolVersion if supported (2025-11-25, 2025-06-18,

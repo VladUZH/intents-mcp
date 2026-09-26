@@ -19,6 +19,7 @@ let package = Package(
             name: "intents-mcp",
             dependencies: ["Core", "IntentsIndex", "Store", "ShortcutForge", "Runner", "MCPServer"],
             path: "Sources/CLI"),
+        .testTarget(name: "CoreTests", dependencies: ["Core"]),
         .testTarget(name: "IntentsIndexTests", dependencies: ["IntentsIndex"], resources: [.copy("Fixtures")]),
         .testTarget(name: "ForgeTests", dependencies: ["Core", "ShortcutForge", "Runner", "Store", "IntentsIndex"]),
         .testTarget(name: "MCPServerTests", dependencies: ["Core", "MCPServer", "ShortcutForge", "Runner", "Store"],
