@@ -457,6 +457,14 @@ M0: **GO**, signed off by the human 2026-09-25.
     old helpers ("outdated: run `intents-mcp enable reminders.add`").
   - **Not yet verified live (GATE):** the new read-back helpers (reminders v3, events v2: title
     filter + Format Date ISO 8601 creation date). Needs re-import + one call each.
+- 2026-09-26 — **Live check of the new read-back helpers: PASS** (human approved): `intents-mcp
+  enable reminders.add calendar.create-event` (0.1.3 build) → "already enabled" for both tools;
+  helpers v3/v2 signed, imported as "… 2" (UUIDs 49FCFA39… / 1573A021…), stale copies named
+  with UUIDs; no signed files left in the store. `call reminders.add '{"title":"intents-mcp
+  0.1.3 check","due":"tomorrow at 11:00"}'` → verified, "due 27 Sep 2026 at 11:00", 2.6 s;
+  `call calendar.create-event …` → verified, "starts 27 Sep 2026 at 16:00", 14.9 s. Helper run
+  directly: `…\n--intents-mcp--D:27 Sep 2026 at 11:00\n--intents-mcp--C:2026-09-26T09:23:17+02:00`
+  (Format Date ISO 8601 works); that item, 40 s old, would be rejected by a new call.
 
 ## Decisions
 
@@ -522,7 +530,8 @@ M0: **GO**, signed off by the human 2026-09-25.
   checkout, so a feature branch there silently disables the bottle.
 
 ## Human steps waiting (GATE)
-- 2026-09-26 — **Live check of the new read-back helpers** before releasing 0.1.3: `intents-mcp
+- 2026-09-26 — ~~Live check of the new read-back helpers~~ done. Still to do: delete the old
+  "intents-mcp verify.reminders"/"verify.calendar" (non-"2") copies. Originally: `intents-mcp
   enable reminders.add calendar.create-event` (2× Add Shortcut for the new helpers; Always
   Allow if asked), then one reminder and one event call must come back "verified". Also
   delete the old "intents-mcp verify.reminders"/"verify.calendar" copies afterwards.
