@@ -511,6 +511,8 @@ M0: **GO**, signed off by the human 2026-09-25.
   e5fbb8c5…14c1. Tap PR #7 (separate clone, `brew style` clean) → CI pass (3m7s) → publish.yml
   success; bottle arm64_tahoe 7ec6f24a…ecba. Registry: published (human entered the device
   code), 0.1.5 isLatest. This Mac: `brew upgrade` 0.1.4 → 0.1.5, poured_from_bottle=true.
+- 2026-09-26 — doctor's iCloud line shortened to "signs tools on enable; Apple receives a copy"
+  (was 149 columns and wrapped mid-word; now 74). Not released yet (next release).
 
 ## Decisions
 

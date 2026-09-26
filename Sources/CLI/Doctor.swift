@@ -43,7 +43,7 @@ enum Doctor {
             }
         }
         add(Check(name: "iCloud", status: "info",
-                         detail: "signing a shortcut needs an iCloud login, and Apple receives a copy for validation; checked when you first enable a tool"))
+                         detail: "signs tools on enable; Apple receives a copy"))
 
         let files = Progress.run("Looking for App Intents metadata (about 10 s)…") { ActionIndex.findMetadataFiles() }
         add(Check(name: "App Intents metadata", status: files.isEmpty ? "fail" : "ok",
