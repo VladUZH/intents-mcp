@@ -465,6 +465,21 @@ M0: **GO**, signed off by the human 2026-09-25.
   `call calendar.create-event …` → verified, "starts 27 Sep 2026 at 16:00", 14.9 s. Helper run
   directly: `…\n--intents-mcp--D:27 Sep 2026 at 11:00\n--intents-mcp--C:2026-09-26T09:23:17+02:00`
   (Format Date ISO 8601 works); that item, 40 s old, would be rejected by a new call.
+- 2026-09-26 — **0.1.3 released** (human approved the release after the live check):
+  - GitHub: tag v0.1.3 (commit 2c1eb97, with the bug-hunt commits 527db7d/0572d8e), release
+    https://github.com/VladUZH/intents-mcp/releases/tag/v0.1.3 with `intents-mcp-0.1.3.mcpb`
+    (sha256 820a6def…4696, `mcpb validate` passes, verified after download); notes lead with the
+    two upgrade steps (re-enable for the new helpers; re-enable metadata tools, wrapper v2).
+    Source tarball sha256 99a7596d…3588.
+  - Tap: formula edited in a separate clone (scratch), `brew style` clean, PR #5 → CI
+    `test-bot (macos-26)` pass (4m7s) → `gh workflow run publish.yml -f pull_request=5` →
+    success; tap main has the 0.1.3 bottle (arm64_tahoe 6378fcd2…8dbf) and the template caveats
+    (`--scope user`, the helper click).
+  - Registry: server.json fileSha256 → 820a6def…; `mcp-publisher login github` (human entered
+    the device code) → `publish` → "Successfully published"; the listing shows 0.1.3 isLatest.
+  - This Mac: `brew update` (local tap on main) → `brew upgrade intents-mcp` → 0.1.2 → 0.1.3,
+    poured_from_bottle=true. `intents-mcp doctor` → all ✓ (exit 0); `shortcuts list` shows only
+    the four current shortcuts (old helper copies deleted by the human).
 
 ## Decisions
 
@@ -530,8 +545,7 @@ M0: **GO**, signed off by the human 2026-09-25.
   checkout, so a feature branch there silently disables the bottle.
 
 ## Human steps waiting (GATE)
-- 2026-09-26 — ~~Live check of the new read-back helpers~~ done. Still to do: delete the old
-  "intents-mcp verify.reminders"/"verify.calendar" (non-"2") copies. Originally: `intents-mcp
+- 2026-09-26 — ~~Live check of the new read-back helpers~~ done; old helper copies deleted. Originally: `intents-mcp
   enable reminders.add calendar.create-event` (2× Add Shortcut for the new helpers; Always
   Allow if asked), then one reminder and one event call must come back "verified". Also
   delete the old "intents-mcp verify.reminders"/"verify.calendar" copies afterwards.
