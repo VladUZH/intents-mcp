@@ -100,7 +100,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     <div class="term" aria-label="Example terminal output">
       <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="ex">Example output</span></div>
 <pre><span class="p">$</span> intents-mcp list
-<span class="d">Found 1,269 actions · 942 usable in Shortcuts · 129 simple</span>
+<span class="d">Found 1,304 actions · 945 discoverable in Shortcuts · 47 simple</span>
 Reminders  Add Reminder · Find Reminders…
 Calendar   Create Event · Find Events…
 Things 3   Add To-Do · Show Today
@@ -110,7 +110,7 @@ Things 3   Add To-Do · Show Today
 <span class="g">✓ 6 signed shortcuts created</span>
 <span class="d">  Click "Add Shortcut", then "Always Allow", once each</span>
 
-<span class="p">$</span> claude mcp add mac -- intents-mcp serve
+<span class="p">$</span> claude mcp add --scope user mac -- intents-mcp serve
 <span class="b">Claude can now use 6 Mac actions.</span></pre>
     </div>
   </header>
@@ -119,7 +119,7 @@ Things 3   Add To-Do · Show Today
     <div class="head"><div class="eyebrow">Why now</div><h2>Agents want the Mac; the official door is closed</h2></div>
     <div class="cards">
       <div class="card"><div class="big">5.2k★</div><h3>People want agents on the Mac</h3><p>Peekaboo has 5.2k stars and apple-mcp 3.1k. A shortcut generator got 1.1k through MacStories. An HN post on Claude driving a spare Mac got 251 points.</p><p class="src">github.com/viticci/shortcuts-playground-plugin</p></div>
-      <div class="card"><div class="big">1,269</div><h3>The tools already exist</h3><p>The Mac checked has 1,269 App Intents actions, 942 usable in Shortcuts. Most come from Apple's apps and frameworks; 8 of 50 third-party apps added 23.</p><p class="src">Local scan, 2026-09-25</p></div>
+      <div class="card"><div class="big">1,304</div><h3>The tools already exist</h3><p>The Mac checked declares 1,304 App Intents actions, 945 discoverable in Shortcuts. Most come from Apple's apps and frameworks; 8 of 50 third-party apps added 21.</p><p class="src">intents-mcp census, 2026-09-26</p></div>
       <div class="card"><div class="big">SIP off</div><h3>Nobody did it the safe way</h3><p>The existing bridge (action-relay) uses a private Apple service, so users must disable System Integrity Protection. The public route through signed shortcuts is open.</p><p class="src"><a href="https://tarq.net/posts/action-relay-shortcut-actions-mcp/">tarq.net · action-relay</a></p></div>
     </div>
   </section>
@@ -130,14 +130,14 @@ Things 3   Add To-Do · Show Today
       <div class="step"><h3>Index intents</h3><p>Read the App Intents metadata each app publishes.</p></div>
       <div class="step"><h3>Choose tools</h3><p>The user picks which actions an agent may use.</p></div>
       <div class="step"><h3>Sign a shortcut</h3><p>Wrap each action in a shortcut and sign it with Apple's tool.</p></div>
-      <div class="step"><h3>Add once</h3><p>The user clicks "Add Shortcut" once per action.</p></div>
+      <div class="step"><h3>Add once</h3><p>The user clicks "Add Shortcut" once per action (plus once for a read-back helper).</p></div>
       <div class="step"><h3>Serve over MCP</h3><p>The agent calls the tool; intents-mcp runs the shortcut and returns the result.</p></div>
     </div>
   </section>
 
   <section class="section two">
     <div class="card"><h3>Weekend scope</h3><ul class="list">
-      <li>Swift CLI: list, enable, serve (MCP over stdio)</li><li>The simple tier first: actions with plain inputs that run in the background (129 on the Mac checked)</li><li>Inputs and outputs passed as plain JSON</li><li>Homebrew install</li></ul></div>
+      <li>Swift CLI: list, enable, serve (MCP over stdio)</li><li>The simple tier first: actions with plain inputs that run in the background (47 on the Mac checked)</li><li>Inputs and outputs passed as plain JSON</li><li>Homebrew install</li></ul></div>
     <div class="card"><h3>Left out on purpose</h3><ul class="list out">
       <li>Anything needing private APIs or SIP off</li><li>iOS (later, through Shortcuts on iPhone)</li><li>A GUI app</li></ul></div>
   </section>
@@ -145,7 +145,7 @@ Things 3   Add To-Do · Show Today
   <section class="section two">
     <div class="card"><h3>Risks</h3><ul class="list risk">
       <li>Apple may ship this itself. MCP groundwork was found in App Intents betas, and OS 27 lets Siri hand requests to ChatGPT or Claude.</li>
-      <li>Two manual steps per tool ("Add Shortcut", then "Always Allow"), and most actions need entity inputs that Shortcuts won't take as text.</li>
+      <li>Manual steps per tool ("Add Shortcut", sometimes "Always Allow"), and most actions need entity inputs that Shortcuts won't take as text.</li>
       <li>Few third-party apps ship intents yet. Signing needs an iCloud login, and Apple receives a copy of each shortcut.</li></ul></div>
     <div class="card"><h3>Why this one</h3><ul class="list">
       <li>The best fit for your Swift and macOS skills.</li>

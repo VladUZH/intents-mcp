@@ -5,15 +5,15 @@ Claude Code, Codex or any MCP client, through Shortcuts, using public APIs only.
 
 ```
 $ intents-mcp census
-This Mac declares 1,269 App Intents actions (1,214 unique) in 223 metadata files,
-across 99 apps and system components.
-  discoverable in Shortcuts          949
-  simple tier                        48   background, plain inputs, returns output
-  need an entity (a note, a list…)   655   not supported yet
+This Mac declares 1,304 App Intents actions (1,249 unique) in 224 metadata files,
+across 91 apps and system components.
+  discoverable in Shortcuts          945
+  simple tier                        47   background, plain inputs, returns output
+  need an entity (a note, a list…)   657   not supported yet
   …
 ```
 
-<sub>Real output from the author's Mac (macOS 27.0, 2026-09-25). Run `intents-mcp census` to get yours.</sub>
+<sub>Real output from the author's Mac (macOS 27.0, 2026-09-26). Run `intents-mcp census` to get yours.</sub>
 
 Apps describe their actions for Siri and Shortcuts in App Intents metadata.
 intents-mcp reads that metadata, lets you choose which actions an agent may use, wraps each one
@@ -45,8 +45,10 @@ Folder") never finished and was disabled, so check a new tool before relying on 
 ## Install
 
 ```sh
-brew install VladUZH/tap/intents-mcp     # prebuilt bottle; no dependencies
+brew install VladUZH/tap/intents-mcp     # prebuilt for Apple silicon; no dependencies
 ```
+
+Intel Macs build from source, which needs Xcode.
 
 No Homebrew yet? Its [installer](https://brew.sh) asks for your password, then waits for
 RETURN, and can stay quiet for a few minutes while it downloads. That's normal. If you
@@ -63,8 +65,8 @@ Needs macOS 26 or later (tested on 27.0) and the `shortcuts` command, which ship
 intents-mcp census                       # what your Mac has
 intents-mcp list --tier simple           # checked tools first, then actions from metadata
 intents-mcp enable reminders.add calendar.create-event
-claude mcp add mac -- intents-mcp serve  # Claude Code
-codex mcp add mac -- intents-mcp serve   # Codex
+claude mcp add --scope user mac -- intents-mcp serve   # Claude Code, in every folder
+codex mcp add mac -- intents-mcp serve                  # Codex
 ```
 
 **The manual steps, honestly:**
@@ -76,8 +78,13 @@ codex mcp add mac -- intents-mcp serve   # Codex
    CotEditor, MacWhisper), and mostly didn't for Reminders and Calendar. It can ask
    again after you upgrade a wrapper, because an upgraded wrapper is a new shortcut.
 
-Reminders and Calendar also add one small read-back helper each ("intents-mcp
-verify.reminders" and "intents-mcp verify.calendar"), which cost the same clicks.
+Tools that read their result back need a second **Add Shortcut** click: Reminders and
+Calendar each add one small read-back helper ("intents-mcp verify.reminders" and
+"intents-mcp verify.calendar"), shared by all tools of that app. Skip it and those tools
+still run, but report "not verified".
+
+Claude Code picks up enabled or disabled tools in a running session; other clients (e.g.
+Codex) may need a restart.
 
 ## Privacy and safety
 
@@ -85,25 +92,37 @@ verify.reminders" and "intents-mcp verify.calendar"), which cost the same clicks
   and runs them with Apple's `shortcuts` command. No private frameworks, no SIP or AMFI
   changes, no Accessibility clicking.
 - **Signing involves Apple.** `shortcuts sign` uses your iCloud account, and Apple
-  receives a copy of each wrapper for validation (Apple's Shortcuts guide says so). The
-  wrappers contain only the action, no personal data.
+  receives a copy of each wrapper for validation (Apple's Shortcuts guide says so). A
+  signed wrapper also carries your Apple Account's signing identity (an account
+  identifier and hashed email address and phone number), so intents-mcp deletes the
+  signed file as soon as it sees the shortcut in your library (after `enable`, or on the
+  next `enable`, `doctor`, `serve` or call of that tool). Don't share signed `.shortcut` files. Added
+  shortcuts live in your Shortcuts library, which syncs through iCloud.
 - **You choose every tool.** Nothing is exposed until you `enable` it. Actions whose
-  names suggest deleting, sending, buying or sharing are flagged and need
-  `--allow-risky`. Agents see them marked `destructiveHint`.
+  names or descriptions suggest deleting, sending, buying or sharing are flagged and need
+  `--allow-risky` (a broad word list, so some harmless ones are flagged too). Agents see them marked `destructiveHint`.
 - **No telemetry, no network of its own.** The MCP server talks only to the client that
   started it, over stdio.
 - **Every call is logged locally** (`intents-mcp log`): tool, time, duration, success,
-  and whether it was verified. Arguments and results are not logged.
-- **Results are read back** where a read action exists, by finding the item that was just
-  created. A mismatch reports `verified: false`, never a false success.
+  and whether it was verified, written when the call starts and when it ends, so an
+  interrupted call still shows up. Arguments and results are not logged.
+- **Results are read back** where a read action exists: the helper finds the item with the
+  title just used and checks that it was created during the call. An older item with the
+  same title, or a different item, reports `verified: false`, never a false success.
+- **Unclear outcomes are said.** If a run times out or ends without a result, the tool
+  says the action may still have happened (`outcomeUnknown`), so agents check before
+  retrying. A call that never started (cancelled or out of time while queued) says so.
 
 ## Commands
 
 ```
 intents-mcp census [--json]                   count the actions this Mac declares
 intents-mcp list [--app <name>] [--tier simple|entity|unsupported|all] [--json]
-intents-mcp enable <tool>... [--allow-risky]  make actions available to agents
-intents-mcp disable <tool>...                 stop exposing them
+                                              (--json: metadata actions only, with a status
+                                              field; the checked tools are at the top of the
+                                              text output)
+intents-mcp enable <tool>... [--allow-risky]  make actions available to agents (alias or id)
+intents-mcp disable <tool>...                 stop exposing them (alias or id)
 intents-mcp call <tool> '<json args>'         run a tool as an agent would
 intents-mcp tools                             the enabled tools
 intents-mcp log [--last <n>]                  what agents called
@@ -114,7 +133,7 @@ intents-mcp serve                             MCP over stdio
 ## Limits
 
 - **Entity actions aren't supported yet**, meaning actions that act on an existing note,
-  reminder or list. On the author's Mac that's 655 of the 949 discoverable actions. A
+  reminder or list. On the author's Mac that's 657 of the 945 discoverable actions. A
   Shortcuts "Find" step that should pick one note once matched the wrong one in testing,
   so these stay off until they can be matched safely.
 - **Declared is not the same as usable.** Some declared actions are refused by Shortcuts

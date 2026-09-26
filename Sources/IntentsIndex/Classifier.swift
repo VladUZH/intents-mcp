@@ -21,19 +21,29 @@ public enum Classifier {
         return !m.contains("background") && m.contains("foreground")
     }
 
-    /// Words that suggest deleting, sending, purchasing or sharing (CLAUDE.md non-negotiable 2).
+    /// Words that suggest deleting, sending, purchasing or sharing (CLAUDE.md non-negotiable 2), with
+    /// their common inflections (tokens are whole words, so "deleted" doesn't match "delete").
     static let riskyWords: Set<String> = [
-        "delete", "remove", "trash", "erase", "clear", "empty",
-        "send", "reply", "forward", "call", "post", "publish",
-        "purchase", "buy", "pay", "order", "subscribe",
-        "share", "invite",
+        "delete", "deletes", "deleted", "deleting", "deletion",
+        "remove", "removes", "removed", "removing", "removal",
+        "trash", "trashes", "trashed", "erase", "erases", "erased", "clear", "clears", "cleared", "empty", "emptied",
+        "unsend", "send", "sends", "sent", "sending", "reply", "replies", "replied", "forward", "forwards", "forwarded",
+        "call", "calls", "calling", "post", "posts", "posted", "publish", "publishes", "published",
+        "purchase", "purchases", "purchased", "buy", "buys", "bought", "pay", "pays", "paid", "payment", "payments",
+        "transfer", "transfers", "order", "orders", "ordered", "subscribe", "subscribes", "unsubscribe", "subscription",
+        "share", "shares", "shared", "sharing", "invite", "invites", "invited", "inviting", "invitation",
+        "unsave", "paying", "buying", "ordering", "transferred", "transferring", "subscribed", "posting",
+        "replying", "forwarding", "erasing", "trashing", "emptying", "discard", "discards", "discarded", "wipe", "wiped",
     ]
 
+    /// Names or descriptions (CLAUDE.md non-negotiable 2).
     public static func risk(_ raw: RawAction) -> [String] {
         var reasons: [String] = []
         if raw.systemProtocols.contains(where: { $0.hasSuffix("DeleteEntity") }) { reasons.append("DeleteEntity protocol") }
         let words = Set(tokens(raw.identifier) + tokens(raw.title))
         for w in words.intersection(riskyWords).sorted() { reasons.append("name: \(w)") }
+        let described = Set(tokens(raw.description ?? "")).intersection(riskyWords).subtracting(words)
+        for w in described.sorted() { reasons.append("description: \(w)") }
         return reasons
     }
 
@@ -42,15 +52,22 @@ public enum Classifier {
         if !raw.discoverable { reasons.append("not discoverable in Shortcuts") }
         let words = Set(tokens(raw.identifier) + tokens(raw.title))
         if !words.isDisjoint(with: ["test", "debug"]) { reasons.append("looks internal (test/debug)") }
+        if !raw.availableOnMac { reasons.append("unavailable on macOS") }
         let m = modes(raw)
         if opensApp(raw) { reasons.append("opens the app") } else if !m.contains("background") { reasons.append("run mode unknown") }
         if raw.outputType == nil { reasons.append("returns no output") }
         let entity = raw.parameters.filter { $0.kind.needsEntity }
         let complex = raw.parameters.filter { !$0.kind.isSimple && !$0.kind.needsEntity }
         for p in entity { reasons.append("takes an entity: \(p.name)") }
-        for p in complex { reasons.append("unsupported input: \(p.name) (\(p.kind.label))") }
+        for p in complex {
+            if case .enumeration(_, let cases) = p.kind, cases.isEmpty {
+                reasons.append("unsupported input: \(p.name) (choice list not in the metadata)")
+            } else {
+                reasons.append("unsupported input: \(p.name) (\(p.kind.label))")
+            }
+        }
         if reasons.isEmpty { return (.simple, []) }
-        if !entity.isEmpty && raw.discoverable { return (.needsEntity, reasons) }
+        if !entity.isEmpty && raw.discoverable && raw.availableOnMac { return (.needsEntity, reasons) }
         return (.unsupported, reasons)
     }
 

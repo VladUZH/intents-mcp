@@ -71,7 +71,7 @@ Success target (from `one-pager.html`): 1,000+ GitHub stars **or** 1,000+ Homebr
 | Subreddit | Members (source) | Self-promotion rule (as read) | Flair | Fit and format |
 |---|---|---|---|---|
 | **r/ClaudeAI** | 1,113,168 (reddapi) | Unverified. Description: "Anthropic does not control or operate this subreddit… Please read the rules before posting." | "Built with Claude" flair unverified | **High.** 30–60 s demo video plus the one-line install; say you are the author. |
-| **r/ClaudeCode** | 402,454 (reddapi) | Unverified | Unknown | **High.** `claude mcp add mac -- intents-mcp serve` plus a clip of Claude creating a reminder. |
+| **r/ClaudeCode** | 402,454 (reddapi) | Unverified | Unknown | **High.** `claude mcp add --scope user mac -- intents-mcp serve` plus a clip of Claude creating a reminder. |
 | **r/mcp** | 119,165 (reddapi) | Unverified | Unknown | **High.** Technical post: tool list, stdio transport, why a signed-shortcut wrapper (and not private XPC) is needed, known limits. |
 | **r/shortcuts** | **572,352** (Reddit widget); 567,940 (reddapi). Reddit header: 163,100 weekly visitors, 2,399 weekly contributions | No self-promotion rule listed. Rule 1 "Stay related to Shortcuts"; Rule 10 "Don't Post Teasers"; Rule 11 "Crossposts are automatically filtered for review"; Rule 3 media only on Imgur, Gfycat or Reddit; Rules 5 and 7: posts with the 'shortcut' flair must link via iCloud, RoutineHub or Shortcuty ([about](https://www.reddit.com/r/shortcuts/about/)) | Rule 8 "Use post flair properly". Flair list unknown | **High.** Frame it as Shortcuts content: "how a generated wrapper calls an App Intent". Include an iCloud link to one sample wrapper and Reddit-hosted screenshots. Post natively, not as a cross-post, and only once it's ready. |
 | **r/macapps** | 246,805 (reddapi) | Rule 3: "not permitted more than once per developer in 30 days… ALWAYS disclose your relationship to your software." Rule 1: "10pt LOCAL Karma Required… App Devs: No main feed promotion unless you qualify + use PCP template… Open Source? Prefix title [OS]." Rule 8: non-qualifying devs "must limit promotion to the monthly megathread." Rule 5: no redirect or shortened URLs ([about](https://www.reddit.com/r/macapps/about/)) | Free | **High audience, strict gate.** The ["Phase 3" post](https://www.reddit.com/r/macapps/comments/1ryaeex/) (2026-03-19) defines three tiers. **Tier 1** needs a Mac App Store app, a GitHub repo with 1+ year of history and 100+ stars, or recognized-dev flair; a new repo does not qualify. **Tier 2** needs a real identity (LinkedIn ideal) and a website with a Privacy Policy and ToS. **Tier 3** is the monthly "App Pile" megathread. Format: title `[OS] …`, PCP body (Problem, Comparison with 1–2 competitors, Pricing). The same post warns: "AI assisted comments are a huge trigger for Reddit auto-removals… (e.g. '—' em dashes)." |
@@ -190,7 +190,7 @@ Body checklist (write it yourself):
 - what it does in one sentence;
 - the measured count on your Mac and how to reproduce it;
 - why signed shortcuts (public route, no SIP; contrast with Action Relay);
-- the one-click-per-tool cost, stated honestly;
+- the per-tool clicks (Add Shortcut, plus one for a read-back helper; sometimes Always Allow), stated honestly;
 - what fails today (entity parameters, apps that open in the foreground);
 - links to Action Relay and iMCP threads.
 

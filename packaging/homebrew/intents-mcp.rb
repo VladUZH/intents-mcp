@@ -1,6 +1,7 @@
-# Formula for the project tap (VladUZH/homebrew-tap). DRAFT: url/sha256 are filled in when a
-# release tag exists (GATE: public repo + tap publishing). Builds from source; no dependencies,
-# so no network access is needed during the build.
+# TEMPLATE for the tap's formula. The published one, with the release's url, sha256 and bottle,
+# is https://github.com/VladUZH/homebrew-tap/blob/main/Formula/intents-mcp.rb (the source of
+# truth); each release copies this file there, fills in url/sha256, and CI adds the bottle.
+# Builds from source with no dependencies, so the build needs no network access.
 class IntentsMcp < Formula
   desc "Expose your Mac's App Intents to AI agents as MCP tools, through Shortcuts"
   homepage "https://github.com/VladUZH/intents-mcp"
@@ -21,9 +22,10 @@ class IntentsMcp < Formula
     <<~EOS
       Enable tools, then add the server to your agent:
         intents-mcp enable reminders.add calendar.create-event
-        claude mcp add mac -- #{opt_bin}/intents-mcp serve
+        claude mcp add --scope user mac -- #{opt_bin}/intents-mcp serve
         codex mcp add mac -- #{opt_bin}/intents-mcp serve
-      Each tool needs one "Add Shortcut" click; Shortcuts may also ask to "Always Allow" on first run.
+      Click "Add Shortcut" for each tool, and once more for its read-back helper (Reminders,
+      Calendar). Shortcuts may also ask to "Always Allow" on a tool's first run.
       Signing a shortcut uses your iCloud account; Apple receives a copy for validation.
     EOS
   end

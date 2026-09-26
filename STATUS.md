@@ -383,6 +383,56 @@ M0: **GO**, signed off by the human 2026-09-25.
   block. Reset to main + pull → "Pouring intents-mcp-0.1.2.arm64_tahoe.bottle.tar.gz",
   `--version` 0.1.2, poured_from_bottle=true. Users were never affected (the published tap was
   correct).
+- 2026-09-26 — **Codebase-wide bug hunt** (human request; Workflow `bug-hunt-intents-mcp`,
+  run wf_5c6c4d59-d8d: 10 finders (6 areas + concurrency, security, spec/docs, edge-inputs) →
+  dedup → 3 skeptics each (reproduce / intent / impact; kept if ≥2 of 3 couldn't refute) × 3
+  rounds; 342 agents). Result: **94 confirmed** (1 high, 11 medium, 82 low), 9 refuted; no
+  dry round, so the tail isn't exhausted (round 3 still found 17). Headline:
+  - HIGH, reproduced: blocking `Shell.run` + `readLine` on Swift's cooperative pool: 13
+    concurrent tools/call on a 14-CPU Mac hung `serve` for good (reader threads never
+    scheduled; `g.wait()` had no deadline).
+  - MEDIUM: read-back could say verified for an OLDER item with the same title; pending
+    helpers never adopted; `enable` rewrote action.json before "already enabled"; exit 0
+    with no output reported "Done."; `disable <id>` silently did nothing; signed wrappers
+    DO carry the Apple Account's DSID + hashed email/phone (README/PRIVACY denied it);
+    interrupted calls unlogged; negative-offset ISO dates lost their time; timeouts reported
+    as failures although the run could still happen; `enable` named the wrong copy to
+    delete; `claude mcp add` without `--scope user` only works in one folder.
+  - Also found: Safari's 35 App Intents were never indexed (symlinked framework into the OS
+    cryptex); unavailable-on-macOS actions counted; aliases not unique; JSON-RPC gaps
+    (batches, invalid ids, deep nesting crash, cancellation, list_changed).
+- 2026-09-26 — **Fixes** (uncommitted at this point; every finding addressed except #67,
+  ids > 2^53, won't fix, and #66, not reproducible on this Foundation):
+  - Core/Shell: reader threads via `Thread.detachNewThread`, bounded waits, SIGINT→SIGTERM→
+    SIGKILL, CancelToken, registry for signal handlers, `runAsync` off the cooperative pool.
+    MCPServer: stdin on a dedicated thread → AsyncStream, `withDiscardingTaskGroup`, ≤4
+    concurrent tool runs, batches, id/jsonrpc validation, depth guard, `arguments` must be
+    an object, notifications/cancelled, `listChanged: true` + a 2 s watcher, unique ≤48-char
+    tool names, SIGPIPE ignored.
+  - Read-back: helpers v3 (reminders) / v2 (events): both filter "Title is", return the
+    creation date via Format Date (ISO 8601); verified only if title matches AND created ≥
+    call start − 5 s; calls per read-back kind serialized; verify also after timeout /
+    no-result; results carry `outcomeUnknown`. **Needs a live re-import (GATE)**.
+  - ToolService/Store/CLI: start+end log lines with call id, interrupted calls logged by the
+    signal handler; one time budget per call (50 s); adoption of pending tools and helpers
+    (never a pre-existing stale copy); O_APPEND log; `disable` by alias or id (+ helper
+    retirement, exact copies listed, error exit); `enable` writes action.json only when
+    signing, deletes the signed file after import, names stale copies exactly, exits 3 if
+    pending; strict flags (`--allow-destructive` accepted); line-buffered stdout; doctor/
+    tools/log/list fixes; Progress spinner width/TERM.
+  - Index: FTS_COMFOLLOW + symlinked bundles (Safari found), flat and nested metadata,
+    app-copy-wins dedup, sibling attribution, display names, case-insensitive ids, Apple
+    detection by bundle id, availability, empty enums, inflected risk words, unique aliases
+    avoiding reserved ones; knownBroken/checkedGenerated keyed by action id.
+  - Forge: integer kind; dates with UTC offsets → local time; generated tools wire only
+    required params; no guessed Team ID; titles trimmed.
+  - Packaging/docs: Info.plist embedding removed (EventKit never requests access now);
+    platform macOS 26; `--scope user` everywhere; README/PRIVACY corrected (signing
+    identity, iCloud-synced library, what is stored); numbers re-measured.
+  - Census now (macOS 27.0, 2026-09-26): **1,304 declared (1,249 unique), 224 files, 91 apps,
+    974 discoverable, 47 simple, 671 entity, 109 risky**; scan ≈ 11 s.
+  - `swift test` → 58 tests in 13 suites passed, incl. a regression test that runs more
+    concurrent calls than CPUs (real child processes) plus a ping.
 
 ## Decisions
 

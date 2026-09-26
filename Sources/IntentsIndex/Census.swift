@@ -34,16 +34,17 @@ public struct Census: Codable, Sendable, Equatable {
         declaredActions = index.declaredCount
         uniqueActions = a.count
         apps = Set(a.map(\.app.bundleID)).count
-        discoverable = a.filter(\.discoverable).count
+        // Discoverable and actually available on macOS (some Apple metadata marks actions iOS-only).
+        discoverable = a.filter { $0.discoverable && $0.availableOnMac != false }.count
         byTier = Dictionary(uniqueKeysWithValues: Tier.allCases.map { t in (t.rawValue, a.filter { $0.tier == t }.count) })
         risky = a.filter(\.risky).count
-        let third = a.filter { $0.app.teamID != "0000000000" }
+        let third = a.filter { !$0.app.isApple }
         thirdParty = ThirdParty(apps: Set(third.map(\.app.bundleID)).count, actions: third.count,
-                                discoverable: third.filter(\.discoverable).count,
+                                discoverable: third.filter { $0.discoverable && $0.availableOnMac != false }.count,
                                 simple: third.filter { $0.tier == .simple }.count)
         let grouped = Dictionary(grouping: a, by: \.app.bundleID)
         topApps = grouped.map { id, xs in
-            AppCount(app: xs[0].app.name, bundleID: id, actions: xs.count, simple: xs.filter { $0.tier == .simple }.count)
+            AppCount(app: xs[0].app.shownName, bundleID: id, actions: xs.count, simple: xs.filter { $0.tier == .simple }.count)
         }
         .sorted { ($0.actions, $1.app) > ($1.actions, $0.app) }
         .prefix(top).map { $0 }

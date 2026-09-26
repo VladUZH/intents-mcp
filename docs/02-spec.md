@@ -91,7 +91,7 @@ enum ParamKind { case string, number, bool, date, enumeration([String]), entity(
 intents-mcp census [--json]                 # counts by tier; the launch number
 intents-mcp list [--app <name>] [--tier simple|entity|all] [--json]
 intents-mcp enable <id>... [--allow-destructive]
-intents-mcp disable <id>...
+intents-mcp disable <id or alias>...
 intents-mcp serve
 intents-mcp log [--last 50]
 intents-mcp doctor     # macOS version, iCloud signed in, shortcuts CLI, wrappers present, "Always Allow" done

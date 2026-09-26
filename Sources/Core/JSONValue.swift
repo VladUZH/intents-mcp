@@ -36,7 +36,8 @@ public enum JSONValue: Codable, Sendable, Equatable, Hashable {
     public var stringValue: String? {
         switch self {
         case .string(let s): return s
-        case .number(let n): return n.rounded() == n ? String(Int64(n)) : String(n)
+        // Int64(n) traps outside ±9.2e18 (a huge number from a client must not kill `serve`).
+        case .number(let n): return n.rounded() == n && abs(n) < 9.0e18 ? String(Int64(n)) : String(n)
         case .bool(let b): return b ? "true" : "false"
         default: return nil
         }

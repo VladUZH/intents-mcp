@@ -1,12 +1,10 @@
 // swift-tools-version:6.1
 import PackageDescription
 
-// The CLI embeds Support/Info.plist so EventKit read-back can show its usage strings.
-let infoPlist = Context.packageDirectory + "/Support/Info.plist"
-
 let package = Package(
     name: "intents-mcp",
-    platforms: [.macOS(.v14)],
+    // Shortcuts' `sign` and the App Intents metadata this reads need macOS 26 (tested on 27).
+    platforms: [.macOS("26.0")],
     products: [
         .executable(name: "intents-mcp", targets: ["intents-mcp"]),
     ],
@@ -20,11 +18,10 @@ let package = Package(
         .executableTarget(
             name: "intents-mcp",
             dependencies: ["Core", "IntentsIndex", "Store", "ShortcutForge", "Runner", "MCPServer"],
-            path: "Sources/CLI",
-            linkerSettings: [.unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
-                                           "-Xlinker", infoPlist])]),
+            path: "Sources/CLI"),
         .testTarget(name: "IntentsIndexTests", dependencies: ["IntentsIndex"], resources: [.copy("Fixtures")]),
         .testTarget(name: "ForgeTests", dependencies: ["Core", "ShortcutForge", "Runner", "Store", "IntentsIndex"]),
-        .testTarget(name: "MCPServerTests", dependencies: ["Core", "MCPServer", "ShortcutForge"], resources: [.copy("Fixtures")]),
+        .testTarget(name: "MCPServerTests", dependencies: ["Core", "MCPServer", "ShortcutForge", "Runner", "Store"],
+                    resources: [.copy("Fixtures")]),
     ]
 )

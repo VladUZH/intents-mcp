@@ -13,6 +13,8 @@ public struct RawAction: Sendable {
     public var discoverable: Bool
     public var systemProtocols: [String]
     public var attributionBundleID: String?
+    /// false when the metadata marks the action unavailable on macOS (obsoleted, or introduced later).
+    public var availableOnMac: Bool = true
 }
 
 public enum MetadataError: Error, CustomStringConvertible {
@@ -79,7 +81,36 @@ public struct MetadataParser {
             openAppWhenRun: a["openAppWhenRun"] as? Bool,
             discoverable: discoverable,
             systemProtocols: a["systemProtocols"] as? [String] ?? [],
-            attributionBundleID: a["attributionBundleIdentifier"] as? String)
+            attributionBundleID: a["attributionBundleIdentifier"] as? String,
+            availableOnMac: Self.availableOnMac(a["availabilityAnnotations"]))
+    }
+
+    /// `@available(macOS, unavailable)` is encoded as `"LNPlatformNameMACOS": {"obsoletedVersion": "*"}`.
+    static func availableOnMac(_ v: Any?, running: [Int] = {
+        let o = ProcessInfo.processInfo.operatingSystemVersion
+        return [o.majorVersion, o.minorVersion, o.patchVersion]
+    }()) -> Bool {
+        guard let all = v as? [String: Any] else { return true }
+        let mac = all.first { $0.key.lowercased() == "lnplatformnamemacos" }?.value as? [String: Any]
+        guard let mac else { return true }
+        func parts(_ s: String) -> [Int]? {
+            let p = s.split(separator: ".").map { Int($0) }
+            return p.contains(nil) || p.isEmpty ? nil : p.compactMap { $0 }
+        }
+        func less(_ a: [Int], _ b: [Int]) -> Bool {  // a < b, missing parts count as 0
+            for i in 0..<max(a.count, b.count) {
+                let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
+                if x != y { return x < y }
+            }
+            return false
+        }
+        if (mac["unavailable"] as? Bool) == true { return false }
+        if let obs = mac["obsoletedVersion"] as? String {
+            if obs == "*" { return false }
+            if let o = parts(obs), !less(running, o) { return false }  // obsoleted at or before this OS
+        }
+        if let intro = mac["introducedVersion"] as? String, let i = parts(intro), less(running, i) { return false }
+        return true
     }
 
     /// A localized-string object: `{key, table?, defaultValue?, alternatives}`.

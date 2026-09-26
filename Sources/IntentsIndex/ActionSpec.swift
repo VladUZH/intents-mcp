@@ -17,6 +17,8 @@ public struct ActionSpec: Codable, Sendable, Equatable {
     public var outputType: String?
     public var supportedModes: [String]
     public var discoverable: Bool
+    /// false when the metadata marks it unavailable on macOS (nil in older data = available).
+    public var availableOnMac: Bool?
     public var opensApp: Bool
     public var systemProtocols: [String]
     /// Deletes, sends, purchases or shares (protocol or name heuristic). Off unless explicitly allowed.
@@ -25,6 +27,8 @@ public struct ActionSpec: Codable, Sendable, Equatable {
     public var tier: Tier
     /// Why the action is not in the simple tier (empty when it is).
     public var tierReasons: [String]
+    /// Set by `list`: "checked: …" or "known-broken: …" (nil = unverified). Not stored.
+    public var status: String?
 }
 
 public struct AppRef: Codable, Sendable, Equatable, Hashable {
@@ -34,6 +38,12 @@ public struct AppRef: Codable, Sendable, Equatable, Hashable {
     public var path: String
     /// "0000000000" for Apple platform binaries; nil when unsigned or unknown.
     public var teamID: String?
+    /// The name Finder shows ("Voice Memos" for "VoiceMemos"); nil when it equals `name`.
+    public var displayName: String?
+
+    public var shownName: String { displayName ?? name }
+    /// Apple's own apps, including App Store ones that carry a real Team ID (Xcode, Pages…).
+    public var isApple: Bool { teamID == "0000000000" || bundleID.lowercased().hasPrefix("com.apple.") }
 }
 
 public struct SourceRef: Codable, Sendable, Equatable {
@@ -60,10 +70,12 @@ public enum ParamKind: Codable, Sendable, Equatable {
     case file
     case other(String)
 
-    /// Primitive or enum: can be passed as a plain JSON value through a wrapper.
+    /// Primitive or enum: can be passed as a plain JSON value through a wrapper. An enum whose values
+    /// the metadata doesn't list can't be validated, so it doesn't count.
     public var isSimple: Bool {
         switch self {
-        case .string, .attributedString, .bool, .int, .double, .date, .dateComponents, .url, .enumeration: return true
+        case .string, .attributedString, .bool, .int, .double, .date, .dateComponents, .url: return true
+        case .enumeration(_, let cases): return !cases.isEmpty
         default: return false
         }
     }

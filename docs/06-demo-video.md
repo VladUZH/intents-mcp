@@ -21,15 +21,15 @@ event in Codex, and the log.
 
 | Time | Screen | Caption (burned in, ≤ 7 words) |
 |---|---|---|
-| 0–3 s | Terminal: `intents-mcp census`. Cut the ~10 s scan; land on "This Mac declares **1,269** App Intents actions". Zoom on the number. | **Your Mac ships 1,269 app actions.** |
-| 3–8 s | `intents-mcp enable reminders.add` → the Shortcuts "Add Shortcut" sheet → click. | **You pick each tool. One click.** |
-| 8–10 s | `claude mcp add mac -- intents-mcp serve` (pasted). | **Public APIs only. No SIP changes.** |
+| 0–3 s | Terminal: `intents-mcp census`. Cut the ~10 s scan; land on "This Mac declares **1,304** App Intents actions". Zoom on the number. | **Your Mac ships 1,304 app actions.** |
+| 3–8 s | `intents-mcp enable reminders.add calendar.create-event` → the Shortcuts "Add Shortcut" sheet → click (cut the repeat clicks: each tool plus its read-back helper). | **You pick each tool. A click to add it.** |
+| 8–10 s | `claude mcp add --scope user mac -- intents-mcp serve` (pasted). | **Public APIs only. No SIP changes.** |
 | 10–21 s | **Split screen:** Claude Code on the left, Reminders on the right. Type *"Add a reminder to call the dentist tomorrow at 10"*. The tool call runs; "Call the dentist, Tomorrow 10:00" appears on the right; Claude's reply ends with "…verified". | **Claude uses the app's own action…** then **…and reads the result back.** |
 | 21–29 s | Codex on the left, Calendar on the right: *"Put 'Demo review' on my calendar tomorrow 14:00–14:30"* → the event appears. | **Codex too.** |
 | 29–32 s | `intents-mcp log` shows `reminders.add … verified mcp:claude-code` and `calendar.create-event … mcp:codex-mcp-client`. | **Every call logged, on your Mac.** |
 | 32–35 s | End card: `brew install VladUZH/tap/intents-mcp` and `github.com/VladUZH/intents-mcp`. | (the card is the caption) |
 
-**Social cut (15 s):** 0–2 s the census number (caption "Your Mac ships 1,269 app
+**Social cut (15 s):** 0–2 s the census number (caption "Your Mac ships 1,304 app
 actions."), 2–12 s the Claude Code → Reminders beat, 12–15 s the end card.
 
 **README GIF (about 10 s, loop):** only the Claude Code → Reminders beat, from typing the prompt
@@ -50,5 +50,6 @@ to "verified". No end card: the README already has the install line.
   very quiet.
 - **Tools:** macOS's ⌘⇧5 screen recording is enough. Screen Studio (paid) adds automatic zooms.
   Cut in iMovie or CapCut. Make the GIF with `ffmpeg` (palettegen) or Gifski.
-- **Before recording:** `brew upgrade intents-mcp`, `intents-mcp doctor` all ✓, and test the
-  exact prompts once so the takes are clean.
+- **Before recording:** `brew upgrade intents-mcp`, `intents-mcp doctor` all ✓, both tools
+  enabled (the Codex beat needs `calendar.create-event`), and test the exact prompts once so
+  the takes are clean.

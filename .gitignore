@@ -5,6 +5,6 @@ DerivedData/
 *.log
 # generated and signed shortcuts belong to the user, not the repo
 *.shortcut
-!Tests/Fixtures/**/*.shortcut
+!Tests/**/Fixtures/**/*.shortcut
 dist/
 __pycache__/

@@ -16,8 +16,10 @@ public final class Localizer: @unchecked Sendable {
         switch strings[key] {
         case let s as String where !s.isEmpty: return s
         case let d as [String: Any]:
-            // Plural/variable forms: fall back to the format key's own text.
-            return d["NSStringLocalizedFormatKey"] as? String
+            // Plural/variable forms: use the format key's text unless it is only a placeholder
+            // ("%#@count@"), in which case the caller falls back to the key or default value.
+            guard let f = d["NSStringLocalizedFormatKey"] as? String, !f.contains("%#@") else { return nil }
+            return f
         default: return nil
         }
     }

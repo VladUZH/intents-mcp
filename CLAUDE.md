@@ -64,7 +64,7 @@ swift run intents-mcp list [--app Notes] [--json]
 swift run intents-mcp census            # counts tools on this Mac; the launch number
 swift run intents-mcp enable reminders.add calendar.create-event
 swift run intents-mcp serve             # MCP over stdio
-claude mcp add mac -- intents-mcp serve
+claude mcp add --scope user mac -- intents-mcp serve
 ```
 
 ## What "done" looks like for the launch

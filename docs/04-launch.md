@@ -3,8 +3,8 @@
 Channel details (subreddits and rules, X/Mastodon/Bluesky accounts, Mac and Swift
 forums, newsletters, MCP registries, 14-day calendar) are in `05-distribution.md`.
 
-**Status (2026-09-25):** everything below is ready for the human to use. Nothing has been
-posted, published or submitted. Open GATEs are listed at the end.
+**Status (2026-09-26):** the repo is public, v0.1.x is on GitHub, the Homebrew tap (Apple silicon
+bottle) and the MCP Registry. Nothing has been posted. Open GATEs are listed at the end.
 
 ## The finding is the launch
 
@@ -21,15 +21,15 @@ material for your own words, not copy to paste.
 
 ## Fact sheet (every number measured, with its source)
 
-**The numbers** (`intents-mcp census`, author's Mac, macOS 27.0 build 26A428, 2026-09-25):
+**The numbers** (`intents-mcp census`, author's Mac, macOS 27.0 build 26A428, 2026-09-26):
 
 | | |
 |---|---|
-| App Intents actions declared | **1,269** (1,214 unique) in 223 metadata files, 99 apps and system components |
-| Discoverable in Shortcuts | **949** |
-| Simple tier (background, plain inputs, returns output) | **48** |
-| Need an entity (a note, a reminder) | 655: not supported yet |
-| Flagged risky (delete/send/buy/share names) | 85 |
+| App Intents actions declared | **1,304** (1,249 unique) in 224 metadata files, 91 apps and system components |
+| Discoverable in Shortcuts (and available on macOS) | **945** |
+| Simple tier (background, plain inputs, returns output) | **47** |
+| Need an entity (a note, a reminder) | 657: not supported yet |
+| Flagged risky (delete/send/buy/share in names or descriptions) | 134 |
 | Third-party apps with intents | 8 of 50 installed: Word, Excel, PowerPoint, Outlook, Teams, WhatsApp, MacWhisper, CotEditor (21 actions, none in the simple tier) |
 
 Say which Mac the numbers come from, and invite readers to run `intents-mcp census`.
@@ -50,7 +50,8 @@ Contrast: Action Relay does the same indexing but calls a private XPC service, w
 SIP and AMFI off.
 
 **The honest costs and limits** (say them before commenters do):
-- **Manual steps per tool:** "Add Shortcut" once. Shortcuts may also ask to "Always Allow" on
+- **Manual steps per tool:** "Add Shortcut" once, plus once for a read-back helper (Reminders
+  and Calendar have one each). Shortcuts may also ask to "Always Allow" on
   the first run: it did every time data went into another app (Notes, CotEditor,
   MacWhisper), and mostly didn't for Reminders and Calendar (clean run 2026-09-26: one dialog
   in total, 3.2 s). Both can happen again after a wrapper upgrade (a new shortcut).
@@ -87,11 +88,11 @@ SIP and AMFI off.
 
 | Asset | State |
 |---|---|
-| README (hero census output, install, two-click cost, privacy, limits) | **Ready:** `README.md` |
+| README (hero census output, install, per-tool clicks, privacy, limits) | **Ready:** `README.md` |
 | Privacy policy (needed by the Claude directory and the MCPB) | **Ready:** `PRIVACY.md` |
-| Homebrew formula (own tap, source build, no dependencies) | **Draft:** `packaging/homebrew/intents-mcp.rb`. url/sha256 need the release tag. Build and test steps pass locally |
-| MCPB bundle | **Built locally:** `scripts/build-mcpb.sh` (universal binary); `mcpb validate` passes; `dist/intents-mcp-0.1.0.mcpb` 711 KB. Not signed or notarized |
-| MCP Registry `server.json` | **Draft:** `packaging/registry/server.json`. Needs the release URL and sha256 |
+| Homebrew formula | **Published:** https://github.com/VladUZH/homebrew-tap (Apple silicon bottle built by CI). `packaging/homebrew/intents-mcp.rb` is the template each release copies there |
+| MCPB bundle | **Released** with each GitHub release (`scripts/build-mcpb.sh`, universal binary, `mcpb validate` passes). Not signed or notarized |
+| MCP Registry | **Published:** `io.github.VladUZH/intents-mcp` (`packaging/registry/server.json`; each release needs a new version and a `mcp-publisher login github`) |
 | Demo video (35 s main, 15 s social, 10 s README GIF) | **To do (human):** script in `06-demo-video.md` |
 | "Which Mac apps are agent-ready" write-up | **Material ready:** census `--json` plus the third-party list above |
 | Social thread (X / Bluesky / Mastodon) | Write by hand. Hook: the census screenshot, then the dentist-reminder clip |
@@ -104,20 +105,20 @@ is reached. Reassess at once if Apple announces native MCP for App Intents.
 
 ## Before launch: not yet done
 
-- Claude Desktop: not tested (60 s request timeout; `serve` defaults to 50 s).
-- A clean Mac or fresh user account: install from the tap and pass the M3 check (the M4
-  acceptance).
-- **Homebrew on macOS 27 refuses to build from source with Xcode 26.6** ("Your Xcode (26.6) …
-  is too outdated. Please update to Xcode 27.0"). Users with older Xcode/CLT need a **bottle**:
-  set up the tap with `brew tap-new` (GitHub Actions bottling) and ship bottles for macOS 27.
-  The local tap test on the author's Mac stopped there (Xcode not updated).
-- Decide the license (drafted as MIT) and the GitHub owner/tap name (drafted as
-  `VladUZH/tap`).
+- **Re-import the read-back helpers** after upgrading: 0.1.3 changes their format (creation-date
+  check). `intents-mcp doctor` flags old helpers; `intents-mcp enable reminders.add
+  calendar.create-event` adds the new ones. Check live that a call reads back "verified".
+- Claude Desktop: not tested (60 s request timeout; `serve` budgets 50 s per call). The MCPB is
+  not notarized.
+- A clean Mac or fresh user account (the VM couldn't sign into iCloud); the clean-slate run on
+  the author's Mac (2026-09-26) passed.
+- Intel Macs build from source (needs Xcode); only an Apple silicon bottle exists.
 
 ## Human steps (GATE)
 
 1. Developer ID signing and notarization, if shipping the MCPB or any prebuilt binary
    ($99/year Apple Developer Program). Not needed for the Homebrew source build.
-2. Public repo (05 §8 says T-14), Homebrew tap (`VladUZH/homebrew-tap`), v0.1.0 tag and
-   release, MCP Registry submission (`mcp-publisher login github`).
+2. Each release: tag, GitHub release, tap PR (CI bottle) and a new MCP Registry version
+   (`mcp-publisher login github` needs a device code each time). Repo, tap and registry entry
+   exist since 2026-09-25.
 3. Record the demo. Post by hand, following the calendar in `05-distribution.md`.

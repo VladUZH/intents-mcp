@@ -20,6 +20,8 @@ public struct Recipe: Sendable {
     public var returnsOutput: Bool
     public var risky: Bool
     public var riskReasons: [String]
+    /// Only adds things (a reminder, an event, a note); lets clients treat it as non-destructive.
+    public var additive: Bool
     /// What was checked live, and where. nil = generated from metadata, not yet checked.
     public var verified: String?
     public var readBack: ReadBack?
@@ -30,7 +32,8 @@ public struct Recipe: Sendable {
 
     public init(alias: String, title: String, summary: String, appName: String, actionIdentifier: String,
                 descriptor: [String: String]? = nil, inputs: [RecipeInput], fixed: [String: FixedValue] = [:],
-                returnsOutput: Bool = true, risky: Bool = false, riskReasons: [String] = [], verified: String?,
+                returnsOutput: Bool = true, risky: Bool = false, riskReasons: [String] = [], additive: Bool = false,
+                verified: String?,
                 readBack: ReadBack? = nil, version: Int = 1,
                 prepare: @escaping @Sendable ([String: JSONValue]) -> [String: JSONValue] = { $0 }) {
         self.alias = alias
@@ -44,6 +47,7 @@ public struct Recipe: Sendable {
         self.returnsOutput = returnsOutput
         self.risky = risky
         self.riskReasons = riskReasons
+        self.additive = additive
         self.verified = verified
         self.readBack = readBack
         self.version = version
@@ -81,7 +85,7 @@ public struct RecipeInput: Sendable, Equatable {
 public enum InputKind: Sendable, Equatable {
     /// Text; dates are text too and Shortcuts parses them ("tomorrow at 10:00" works, M0).
     case text, date
-    case number, bool
+    case number, integer, bool
     case enumeration([String])
 
     /// Text-like values go through Get Text and a token string; numbers, booleans and enums are

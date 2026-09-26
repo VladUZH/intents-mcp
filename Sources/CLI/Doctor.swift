@@ -2,6 +2,8 @@ import Foundation
 import Core
 import IntentsIndex
 import Runner
+import ShortcutForge
+import Store
 
 enum Doctor {
     struct Check: Encodable {
@@ -10,7 +12,7 @@ enum Doctor {
         var detail: String
     }
 
-    static func checks() -> [Check] {
+    static func checks() async -> [Check] {
         var out: [Check] = []
         let v = ProcessInfo.processInfo.operatingSystemVersion
         let vs = "\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
@@ -42,32 +44,85 @@ enum Doctor {
         out.append(Check(name: "App Intents metadata", status: files.isEmpty ? "fail" : "ok",
                          detail: "\(files.count) metadata files (run `intents-mcp census`)"))
 
-        let store = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("intents-mcp")
+        let store = Tools.store.root  // honours INTENTS_MCP_HOME
         out.append(Check(name: "local store", status: "info",
                          detail: FileManager.default.fileExists(atPath: store.path) ? store.path : "\(store.path) (created on first enable)"))
-        let tools = (try? Tools.store.tools()) ?? []
+        // The call log must be writable, or calls would run unlogged.
+        let logDir = Tools.store.root.path
+        if FileManager.default.fileExists(atPath: Tools.store.logFile.path) {
+            let ok = FileManager.default.isWritableFile(atPath: Tools.store.logFile.path)
+            out.append(Check(name: "call log", status: ok ? "ok" : "fail",
+                             detail: ok ? Tools.store.logFile.path : "\(Tools.store.logFile.path) is not writable: calls can't be logged"))
+        } else if FileManager.default.fileExists(atPath: logDir), !FileManager.default.isWritableFile(atPath: logDir) {
+            out.append(Check(name: "call log", status: "fail", detail: "\(logDir) is not writable: calls can't be logged"))
+        }
+        await Tools.service.adoptPendingAll()
+        Tools.store.removeSignedWrappersOfAddedTools()
+        let tools: [EnabledTool]
+        do {
+            tools = try Tools.store.tools()
+        } catch {
+            out.append(Check(name: "tools.json", status: "fail",
+                             detail: "can't be read (\(error)); `serve` exposes no tools until it is fixed or removed"))
+            return out
+        }
         if tools.isEmpty {
             out.append(Check(name: "tools enabled", status: "info", detail: "none yet (`intents-mcp enable reminders.add`)"))
-        } else {
-            let library = Library.entries() ?? []
-            for t in tools {
-                let present = t.shortcutUUID.map { u in library.contains { $0.uuid == u } } ?? false
-                out.append(Check(name: "tool \(t.alias)", status: present ? "ok" : "warn",
-                                 detail: present ? "\(t.shortcutName) in Shortcuts"
-                                     : t.shortcutUUID == nil ? "pending: click Add Shortcut (or `intents-mcp enable \(t.alias)`)"
-                                     : "its shortcut is missing from Shortcuts: run `intents-mcp enable \(t.alias)`"))
+            return out
+        }
+        guard let library = await Library.entries() else {
+            out.append(Check(name: "tools enabled", status: "warn",
+                             detail: "\(tools.count) enabled, but the Shortcuts library couldn't be read to check them"))
+            return out
+        }
+        for t in tools {
+            let copies = Library.matching(t.shortcutName, in: library)
+            // Helpers are installed by the tool that uses them, not by their own alias.
+            let enableKey = ReadBackWrappers.kind(forAlias: t.alias).map(ReadBackWrappers.owner) ?? t.alias
+            let present = t.shortcutUUID.map { u in library.contains { $0.uuid == u } } ?? false
+            var status = present ? "ok" : "warn"
+            var detail = present ? "\(t.shortcutName) in Shortcuts"
+                : t.shortcutUUID == nil ? "pending: click Add Shortcut, then run `intents-mcp enable \(enableKey)`"
+                : "its shortcut is missing from Shortcuts: run `intents-mcp enable \(enableKey)`"
+            if t.source == "generated" || t.source == "catalog" {
+                do {
+                    let r = try Tools.service.recipe(for: t)
+                    if r.version != t.version {
+                        status = "warn"
+                        detail = "its wrapper is from an older intents-mcp: run `intents-mcp enable \(t.alias)` to update it"
+                    }
+                } catch {
+                    status = "warn"
+                    detail = "not offered to agents any more: \(error)"
+                }
             }
+            let usedBy = tools.contains { o in
+                o.source != "helper" && (try? Tools.service.recipe(for: o))?.readBack.map(ReadBackWrappers.alias) == t.alias
+            }
+            if ReadBackWrappers.kind(forAlias: t.alias) != nil, !usedBy {
+                status = "warn"
+                detail = "no enabled tool uses this read-back helper: run `intents-mcp disable \(t.alias)` and delete its shortcut"
+            } else if let k = ReadBackWrappers.kind(forAlias: t.alias), t.version != ReadBackWrappers.version(k) {
+                status = "warn"
+                detail = "this read-back helper is from an older intents-mcp, so results aren't verified: run `intents-mcp enable \(enableKey)`"
+            }
+            let extra = copies.filter { $0.uuid != t.shortcutUUID }
+            if present, !extra.isEmpty {
+                status = "warn"
+                detail += "; other copies: " + extra.map { "\"\($0.name)\"" }.joined(separator: ", ")
+                    + " (delete them unless intents-mcp on another Mac with your iCloud account uses them)"
+            }
+            out.append(Check(name: "tool \(t.alias)", status: status, detail: detail))
         }
         return out
     }
 
-    static func run(json: Bool) -> Int32 {
-        let cs = checks()
+    static func run(json: Bool) async -> Int32 {
+        let cs = await checks()
         if json {
             printJSON(cs)
         } else {
-            let width = min(48, cs.map(\.name.count).max() ?? 22)
+            let width = cs.map(\.name.count).max() ?? 22
             for c in cs {
                 let mark = ["ok": "✓", "warn": "!", "fail": "✗", "info": "·"][c.status] ?? "?"
                 print("\(mark) \(c.name.padding(toLength: width, withPad: " ", startingAt: 0)) \(c.detail)")

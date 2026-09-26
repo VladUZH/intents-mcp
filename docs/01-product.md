@@ -24,7 +24,7 @@ not by clicking around the screen, and without turning off my Mac's security."
 4. `intents-mcp enable reminders.add calendar.create-event`: creates signed shortcuts; the
    user clicks "Add Shortcut" once for each, then runs each once and picks "Always
    Allow" (needed again after upgrades).
-5. `claude mcp add mac -- intents-mcp serve`. Claude can now use those actions and gets
+5. `claude mcp add --scope user mac -- intents-mcp serve`. Claude can now use those actions and gets
    their results back.
 6. `intents-mcp log` shows what agents called.
 

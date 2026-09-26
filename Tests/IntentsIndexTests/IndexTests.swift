@@ -215,3 +215,100 @@ struct FixtureApp {
         #expect(apps.hostForFramework(named: "WidgetKit") == nil)
     }
 }
+
+@Suite struct BugHuntRegressionTests {
+    @Test func aliasesStayUniqueAndAvoidReservedNames() throws {
+        let f = try FixtureApp()
+        defer { f.remove() }
+        var actions = f.index().actions
+        // A title whose slug already ends in "-2" must not collide with a numbered duplicate.
+        actions[1].title = actions[0].title + " 2"
+        actions.append(actions[0])
+        ActionIndex.assignAliases(&actions, reserved: ["fixture.create-thing"])
+        #expect(Set(actions.map(\.alias)).count == actions.count)
+        #expect(!actions.map(\.alias).contains("fixture.create-thing"))
+    }
+
+    @Test func walkFollowsSymlinkedRootsAndBundlesAndFindsFlatMetadata() throws {
+        let f = try FixtureApp()
+        defer { f.remove() }
+        let fm = FileManager.default
+        // A symlinked root (like /System/Cryptexes/App).
+        let link = f.root.deletingLastPathComponent().appendingPathComponent("imcp-link-\(UUID().uuidString)")
+        try fm.createSymbolicLink(at: link, withDestinationURL: f.root)
+        defer { try? fm.removeItem(at: link) }
+        #expect(ActionIndex.findMetadataFiles(roots: [link.path]).count == 1)
+        // A symlinked bundle inside a root (like SafariSwift.framework).
+        let elsewhere = f.root.deletingLastPathComponent().appendingPathComponent("imcp-target-\(UUID().uuidString)")
+        let fw = elsewhere.appendingPathComponent("Real.framework/Resources/Metadata.appintents")
+        try fm.createDirectory(at: fw, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: elsewhere) }
+        try fm.copyItem(at: f.metadata, to: fw.appendingPathComponent("extract.actionsdata"))
+        try fm.createSymbolicLink(at: f.root.appendingPathComponent("Linked.framework"),
+                                  withDestinationURL: elsewhere.appendingPathComponent("Real.framework"))
+        // An iOS-layout app (metadata at the bundle's top level) and a bundle nested in Resources.
+        let flat = f.root.appendingPathComponent("Wrapped.app/Wrapper/Inner.app/Metadata.appintents")
+        try fm.createDirectory(at: flat, withIntermediateDirectories: true)
+        try fm.copyItem(at: f.metadata, to: flat.appendingPathComponent("extract.actionsdata"))
+        let nested = f.resources.appendingPathComponent("Plugin.bundle/Contents/Resources/Metadata.appintents")
+        try fm.createDirectory(at: nested, withIntermediateDirectories: true)
+        try fm.copyItem(at: f.metadata, to: nested.appendingPathComponent("extract.actionsdata"))
+        // Symlinked bundle + iOS-layout app are found; bundles nested inside Resources are not
+        // searched on purpose (cost ~40% more scan time and found nothing on the Mac checked).
+        #expect(ActionIndex.findMetadataFiles(roots: [f.root.path]).count == 3)
+    }
+
+    @Test func availabilityOnMac() {
+        #expect(!MetadataParser.availableOnMac(["LNPlatformNameMACOS": ["obsoletedVersion": "*"]]))
+        #expect(!MetadataParser.availableOnMac(["LNPlatformNameMACOS": ["introducedVersion": "99.0"]], running: [27, 0, 0]))
+        #expect(!MetadataParser.availableOnMac(["LNPlatformNameMACOS": ["introducedVersion": "26.4"]], running: [26, 2, 0]))
+        #expect(MetadataParser.availableOnMac(["LNPlatformNameMACOS": ["introducedVersion": "26.4"]], running: [27, 0, 0]))
+        #expect(MetadataParser.availableOnMac(["LNPlatformNameMACOS": ["obsoletedVersion": "30.0"]], running: [27, 0, 0]))
+        #expect(MetadataParser.availableOnMac(["LNPlatformNameWildcard": ["introducedVersion": "*"]]))
+        #expect(MetadataParser.availableOnMac(nil))
+    }
+
+    @Test func namesAppleAndRisk() {
+        #expect(Bundles.clean("\u{200E}WhatsApp ") == "WhatsApp")
+        #expect(AppRef(name: "Pages", bundleID: "com.apple.iWork.Pages", version: nil, path: "/", teamID: "K36BKF7T3D").isApple)
+        #expect(!AppRef(name: "X", bundleID: "com.example.x", version: nil, path: "/", teamID: "ABCDE12345").isApple)
+        func raw(_ id: String) -> RawAction {
+            RawAction(identifier: id, fullyQualifiedTypeName: nil, title: id, description: nil, parameters: [],
+                      outputType: "string", supportedModes: 1, openAppWhenRun: false, discoverable: true,
+                      systemProtocols: [], attributionBundleID: nil)
+        }
+        for id in ["DeletedItemsIntent", "SentMessageIntent", "SharingIntent", "PaymentIntent", "UnsubscribeIntent", "TransferFundsIntent"] {
+            #expect(!Classifier.risk(raw(id)).isEmpty, "\(id)")
+        }
+        #expect(Classifier.risk(raw("GetLockMessageIntent")).isEmpty)
+        #expect(!ParamKind.enumeration(id: "X", cases: []).isSimple)
+    }
+}
+
+@Suite struct VerificationRoundRegressionTests {
+    @Test func riskFromDescriptionsAndMoreWords() {
+        func raw(_ id: String, _ desc: String? = nil) -> RawAction {
+            RawAction(identifier: id, fullyQualifiedTypeName: nil, title: id, description: desc, parameters: [],
+                      outputType: "string", supportedModes: 1, openAppWhenRun: false, discoverable: true,
+                      systemProtocols: [], attributionBundleID: nil)
+        }
+        #expect(Classifier.risk(raw("UnsaveArticleIntent")).contains("name: unsave"))
+        #expect(Classifier.risk(raw("RemoveFromListIntent2", "Deletes the item from your list")).contains("description: deletes"))
+    }
+
+    @Test func unavailableActionsAreNotEntityOrDiscoverable() {
+        var raw = RawAction(identifier: "X", fullyQualifiedTypeName: nil, title: "X", description: nil,
+                            parameters: [ParamSpec(name: "n", title: "N", description: nil, optional: false, kind: .entity("NoteEntity"))],
+                            outputType: "string", supportedModes: 1, openAppWhenRun: false, discoverable: true,
+                            systemProtocols: [], attributionBundleID: nil)
+        #expect(Classifier.tier(raw).0 == .needsEntity)
+        raw.availableOnMac = false
+        #expect(Classifier.tier(raw).0 == .unsupported)
+    }
+
+    @Test func frameworkHostForSafari() {
+        let apps = AppDirectory(apps: [BundleFacts(url: URL(fileURLWithPath: "/Applications/Safari.app"), bundleID: "com.apple.Safari", name: "Safari")])
+        #expect(apps.hostForFramework(named: "SafariSwift")?.name == "Safari")
+        #expect(apps.app(bundleID: "COM.APPLE.SAFARI")?.name == "Safari")
+    }
+}
