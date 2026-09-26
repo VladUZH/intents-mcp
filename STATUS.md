@@ -527,6 +527,11 @@ M0: **GO**, signed off by the human 2026-09-25.
   chatmcp/mcpso#4411. modelcontextprotocol/servers now points to the MCP Registry (already
   listed). Left to the human: mcpservers.org/submit (needs a contact email), claiming the Glama
   listing (GitHub login).
+- 2026-09-26 — More listings and outreach (human approved each): mcpservers.org form submitted
+  (free plan, review within 2 weeks); Glama listing claimed by the human; repo topics added
+  (mcp-server, model-context-protocol, ai-agents, macos-automation); MacStories email sent to
+  Federico Viticci (cc John Voorhees) from the human's Gmail; iOS Dev Weekly suggestion form
+  submitted (the human finished the dropdowns).
 
 ## Decisions
 
