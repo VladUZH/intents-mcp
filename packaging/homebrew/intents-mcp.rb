@@ -5,7 +5,7 @@
 class IntentsMcp < Formula
   desc "Expose your Mac's App Intents to AI agents as MCP tools, through Shortcuts"
   homepage "https://github.com/VladUZH/intents-mcp"
-  url "https://github.com/VladUZH/intents-mcp/archive/refs/tags/v0.1.5.tar.gz"
+  url "https://github.com/VladUZH/intents-mcp/archive/refs/tags/v0.1.6.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
 
