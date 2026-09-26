@@ -3,6 +3,8 @@
 **Your Mac already ships over a thousand app actions. intents-mcp hands the ones you pick to
 Claude Code, Codex or any MCP client, through Shortcuts, using public APIs only.**
 
+https://github.com/user-attachments/assets/3db14186-e1c6-4724-80da-f9aced0f1fb5
+
 ```
 $ intents-mcp census
 This Mac declares 1,304 App Intents actions (1,249 unique)
