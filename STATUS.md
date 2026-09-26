@@ -519,6 +519,14 @@ M0: **GO**, signed off by the human 2026-09-25.
   publish.yml success; bottle arm64_tahoe 6d180d69…8767. Registry: published (human entered the
   device code), 0.1.6 isLatest. This Mac: `brew upgrade` 0.1.5 → 0.1.6, poured_from_bottle=true;
   `intents-mcp doctor` shows the short iCloud line.
+- 2026-09-26 — **Directory listings** (human asked to automate as much as possible):
+  punkpeye/awesome-mcp-servers PR #15174 (OS Automation, Glama badge, "🤖🤖🤖" agent opt-in;
+  bot labels has-emoji, valid-name, has-glama; asks for a Glama quality score). Glama already
+  indexes the repo (glama.ai/mcp/servers/VladUZH/intents-mcp) but shows no score; its checks run
+  servers in a Linux container, which a macOS-only server can't pass. mcp.so: issue
+  chatmcp/mcpso#4411. modelcontextprotocol/servers now points to the MCP Registry (already
+  listed). Left to the human: mcpservers.org/submit (needs a contact email), claiming the Glama
+  listing (GitHub login).
 
 ## Decisions
 
