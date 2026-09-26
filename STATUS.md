@@ -506,6 +506,11 @@ M0: **GO**, signed off by the human 2026-09-25.
   error/NOT verified red; enable "Click Add Shortcut." bold. Checks: under a pty, census and
   doctor output with escape codes removed equals the piped output line for line (census ≤ 78
   columns); `NO_COLOR=1` and pipes → no escape codes. `swift test` → 68 tests in 17 suites pass.
+- 2026-09-26 — **0.1.5 released** (human approved): colors. Tag v0.1.5, GitHub release with
+  `intents-mcp-0.1.5.mcpb` (sha256 f876d399…12b7, verified after download); source tarball
+  e5fbb8c5…14c1. Tap PR #7 (separate clone, `brew style` clean) → CI pass (3m7s) → publish.yml
+  success; bottle arm64_tahoe 7ec6f24a…ecba. Registry: published (human entered the device
+  code), 0.1.5 isLatest. This Mac: `brew upgrade` 0.1.4 → 0.1.5, poured_from_bottle=true.
 
 ## Decisions
 
