@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1280px;height:640px;overflow:hidden}
+body{background:radial-gradient(1200px 700px at 85% -10%,#2b2f6b 0%,#0f1124 55%,#0a0b17 100%);color:#e8e9f3;font-family:-apple-system,"SF Pro Display",Helvetica,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 72px;box-sizing:border-box}
+.l{width:560px}
+.name{font:600 30px "SF Mono",Menlo,monospace;color:#8b90c9;letter-spacing:.5px}
+h1{font-size:64px;line-height:1.05;margin:18px 0 22px;font-weight:800;letter-spacing:-1.5px}
+h1 b{color:#5fe1e6}
+p{font-size:26px;line-height:1.35;color:#b9bcd8;margin:0 0 28px}
+.pill{display:inline-block;font:500 20px "SF Mono",Menlo,monospace;background:#1b1e3d;border:1px solid #33376b;border-radius:10px;padding:10px 16px;color:#e8e9f3}
+.term{width:560px;background:#12142a;border:1px solid #2d3163;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
+.bar{height:38px;background:#1a1d3a;display:flex;align-items:center;gap:9px;padding:0 16px}
+.bar i{width:13px;height:13px;border-radius:50%;display:block}
+pre{margin:0;padding:22px 24px 26px;font:18px/1.6 "SF Mono",Menlo,monospace;color:#d5d7ea}
+.c{color:#5fe1e6;font-weight:700}.g{color:#6fdc8c}.y{color:#e5c567}.d{color:#6d7196}.w{font-weight:700;color:#fff}
+</style></head><body>
+<div class="l">
+<div class="name">intents-mcp</div>
+<h1>Your Mac ships <b>1,304</b> app actions.<br>Now your agent can use them.</h1>
+<p>App Intents → MCP tools for Claude Code, Codex and any MCP client. Through Shortcuts, public APIs only.</p>
+<span class="pill">brew install VladUZH/tap/intents-mcp</span>
+</div>
+<div class="term"><div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+<pre><span class="d">$</span> intents-mcp census
+<span class="w">This Mac declares <span class="c">1,304</span> App Intents actions</span>
+
+  discoverable in Shortcuts  <span class="w">945</span>
+  <span class="g">simple tier                 47</span>
+  <span class="d">need an entity (a note…)   657</span>
+  <span class="y">flagged risky              134</span>
+
+<span class="d">$</span> claude <span class="d">"add a reminder: dentist, 10am"</span>
+<span class="g">✓ reminders.add  verified</span></pre></div>
+</body></html>
