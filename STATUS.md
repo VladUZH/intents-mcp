@@ -491,6 +491,12 @@ M0: **GO**, signed off by the human 2026-09-25.
   4 low findings confirmed and fixed (env value with a newline, no cap on a set gap → 10 s
   budget, README/demo-doc wording), concurrency lens clean. Scans ran 30–60 s during testing
   because of unrelated machine load (the released 0.1.3 binary was equally slow).
+- 2026-09-26 — **0.1.4 released** (human approved): line-by-line output. Tag v0.1.4, GitHub
+  release with `intents-mcp-0.1.4.mcpb` (sha256 80231761…9976, verified after download); source
+  tarball 1bd139ca…df25. Tap PR #6 (separate clone, `brew style` clean) → CI pass (2m49s) →
+  publish.yml success; bottle arm64_tahoe 0d65adb7…3e4a. Registry: login (human entered the
+  device code) → published, 0.1.4 isLatest. This Mac: `brew upgrade` 0.1.3 → 0.1.4,
+  poured_from_bottle=true; `tools` under a pty paced ≈ 45 ms per line.
 
 ## Decisions
 
