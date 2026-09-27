@@ -3,6 +3,8 @@
 **Your Mac already ships over a thousand app actions. intents-mcp hands the ones you pick to
 Claude Code, Codex or any MCP client, through Shortcuts, using public APIs only.**
 
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/vladuzh/intents-mcp)
+
 https://github.com/user-attachments/assets/3db14186-e1c6-4724-80da-f9aced0f1fb5
 
 ```
@@ -156,6 +158,13 @@ red for failures). Set `NO_COLOR=1` to turn them off; pipes, files and `--json` 
   Shortcuts app yourself.
 - **The Mac must be awake.** Shortcuts doesn't run while it's asleep. Another project reports runs working with the screen locked; that isn't tested here yet.
 - **Few third-party apps ship App Intents yet.** On the author's Mac, 8 of 50 did.
+
+## Why not Siri?
+
+If Siri does what you need, use it. intents-mcp is for the agent you already work in: Claude
+Code, Codex or any MCP client can act on your Mac in the middle of a task ("add a reminder to
+follow up on this PR"). You choose each action it gets, every call is logged on your Mac, and
+results are read back where possible. It works with whichever model and client you use.
 
 ## How it works
 
